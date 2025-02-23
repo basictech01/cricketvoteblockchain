@@ -7,6 +7,7 @@ interface IUser extends Document {
   provider: string;
   createdAt: Date;
   updatedAt: Date;
+  balance: number;
 }
 
 export type { IUser };
@@ -16,6 +17,7 @@ const UserSchema = new Schema<IUser>(
     name: { type: String },
     profilePicture: { type: String },
     provider: { type: String, required: true },
+    balance: { type: Number, default: 100 },
   },
   { timestamps: true }
 );
