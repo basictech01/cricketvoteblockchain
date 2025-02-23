@@ -1,101 +1,190 @@
-import Image from "next/image";
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Coins, Trophy, User } from "lucide-react"
 
-export default function Home() {
+export default function Dashboard() {
+  // Redirect to login if not authenticated
+  // const session = await getSession()
+  // if (!session) redirect('/login')
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <div className="min-h-screen bg-black text-white">
+      {/* Sidebar */}
+      <aside className="fixed left-0 top-0 z-30 h-screen w-64 border-r border-zinc-800 bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/75">
+        <div className="flex h-14 items-center border-b border-zinc-800 px-4">
+          <span className="flex items-center gap-2 font-semibold">
+            <Trophy className="h-5 w-5 text-yellow-500" />
+            Cricket Prophet
+          </span>
+        </div>
+        <div className="p-4">
+          <div className="mb-4 flex items-center gap-3 rounded-lg bg-zinc-800/50 p-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-700">
+              <User className="h-5 w-5 text-zinc-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">John Doe</p>
+              <div className="flex items-center gap-1">
+                <Coins className="h-3.5 w-3.5 text-yellow-500" />
+                <p className="text-xs text-zinc-400">1,234 coins</p>
+              </div>
+            </div>
+          </div>
+          <nav className="space-y-1">
+            <Button variant="ghost" className="w-full justify-start" asChild>
+              <a href="#live" className="text-zinc-400 hover:text-white">
+                Live Matches
+              </a>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild>
+              <a href="#mybets" className="text-zinc-400 hover:text-white">
+                My Bets
+              </a>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start" asChild>
+              <a href="#leaderboard" className="text-zinc-400 hover:text-white">
+                Leaderboard
+              </a>
+            </Button>
+          </nav>
+        </div>
+      </aside>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Main Content */}
+      <main className="pl-64">
+        <div className="border-b border-zinc-800 bg-zinc-900/95 backdrop-blur supports-[backdrop-filter]:bg-zinc-900/75">
+          <div className="flex h-14 items-center px-6">
+            <h1 className="text-lg font-semibold">Live Betting</h1>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="mb-8">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-semibold">India vs Australia</h2>
+              <Badge variant="outline" className="border-emerald-500 text-emerald-500">
+                LIVE
+              </Badge>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <BettingQuestions />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900">
+            <div className="border-b border-zinc-800 p-4">
+              <h3 className="font-semibold">Your Active Bets</h3>
+            </div>
+            <ScrollArea className="h-[300px]">
+              <ActiveBets />
+            </ScrollArea>
+          </div>
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
     </div>
-  );
+  )
 }
+
+function BettingQuestions() {
+  const questions = [
+    {
+      id: 1,
+      question: "Will Virat Kohli score a century?",
+      odds: "3.5x",
+      timeLeft: "45m",
+      alreadyBet: false,
+    },
+    {
+      id: 2,
+      question: "Total sixes in the match > 12?",
+      odds: "2.1x",
+      timeLeft: "30m",
+      alreadyBet: true,
+    },
+    // Add more questions up to 16
+  ].slice(0, 16) // Ensure max 16 questions
+
+  return (
+    <>
+      {questions.map((q) => (
+        <Card
+          key={q.id}
+          className={`group relative overflow-hidden border-zinc-800 bg-zinc-900/50 transition-colors hover:bg-zinc-900 ${
+            q.alreadyBet ? "ring-1 ring-purple-500/50" : ""
+          }`}
+        >
+          <CardContent className="p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <Badge variant="secondary" className="bg-zinc-800 text-zinc-400">
+                {q.odds}
+              </Badge>
+              {q.alreadyBet && (
+                <Badge variant="secondary" className="bg-purple-500/10 text-purple-400">
+                  Bet Placed
+                </Badge>
+              )}
+            </div>
+            <p className="mb-3 text-sm">{q.question}</p>
+            <div className="flex items-center justify-between">
+              <Button
+                size="sm"
+                className={`w-full ${
+                  q.alreadyBet
+                    ? "bg-purple-500/10 text-purple-400 hover:bg-purple-500/20"
+                    : "bg-emerald-500 text-white hover:bg-emerald-600"
+                }`}
+                disabled={q.alreadyBet}
+              >
+                {q.alreadyBet ? "Bet Placed" : "Place Bet"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </>
+  )
+}
+
+function ActiveBets() {
+  const bets = [
+    {
+      id: 1,
+      question: "Total sixes in the match > 12?",
+      amount: 100,
+      potential: 210,
+      match: "IND vs AUS",
+      status: "live",
+    },
+    {
+      id: 2,
+      question: "Will there be a wicket in the next over?",
+      amount: 50,
+      potential: 125,
+      match: "IND vs AUS",
+      status: "live",
+    },
+  ]
+
+  return (
+    <div className="space-y-2 p-4">
+      {bets.map((bet) => (
+        <div
+          key={bet.id}
+          className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/50 p-4"
+        >
+          <div className="space-y-1">
+            <p className="text-sm font-medium">{bet.question}</p>
+            <p className="text-xs text-zinc-400">{bet.match}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-medium">{bet.amount} coins</p>
+            <p className="text-xs text-emerald-400">Potential: {bet.potential}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
