@@ -6,7 +6,7 @@ import User from '@/lib/model/User';
 
 export async function POST(request: NextRequest) {
     try {
-        const { questionId, option, amount, userEmail } = await request.json();
+        const { questionId, option, amount, userEmail, hardness } = await request.json();
 
         if (!userEmail) {
             return NextResponse.json({ message: 'User email is required' }, { status: 400 });
@@ -28,7 +28,8 @@ export async function POST(request: NextRequest) {
             question: question._id,
             user: user._id,
             option,
-            amount
+            amount,
+            hardness
         });
 
         return NextResponse.json({ bet, message: 'Bet created' }, { status: 201 });

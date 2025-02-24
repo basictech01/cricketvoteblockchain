@@ -2,20 +2,26 @@ import { Schema, model, models, Document } from 'mongoose';
 
 interface IQuestion extends Document {
   question: string;
-  options: string[];    
+  options: string[];
   answer: string;
   createdAt: Date;
   updatedAt: Date;
+  isActive: boolean;
+  closedAt: Date;
+  hardness: number;
 }
 
 const QuestionSchema = new Schema<IQuestion>(
   {
     question: { type: String, required: true },
     options: { type: [String], required: true },
-    answer: { type: String, required: true },
+    answer: { type: String, default: null },
+    isActive: { type: Boolean, default: true },
+    closedAt: { type: Date, default: null },
+    hardness: { type: Number, default: 1 },
   },
   { timestamps: true }
-);  
+);
 
 const Question = models.Question || model<IQuestion>('Question', QuestionSchema);
 
