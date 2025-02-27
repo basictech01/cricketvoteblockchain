@@ -8,6 +8,8 @@ interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   balance: number;
+  publicKey: string;
+  privateKey: string;
 }
 
 export type { IUser };
@@ -18,6 +20,8 @@ const UserSchema = new Schema<IUser>(
     profilePicture: { type: String },
     provider: { type: String, required: true },
     balance: { type: Number, default: 100 },
+    publicKey: { type: String },
+    privateKey: { type: String },
   },
   { timestamps: true }
 );

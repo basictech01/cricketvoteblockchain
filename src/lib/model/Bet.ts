@@ -8,15 +8,12 @@ interface IBet extends Document {
   amount: number;
   createdAt: Date;
   updatedAt: Date;
-  hardness: number;
 }
 
 const BetSchema = new Schema<IBet>(
   {
     question: { type: Schema.Types.ObjectId, ref: 'Question', required: true },
     user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    amount: { type: Number, required: true },
-    hardness: { type: Number, required: true },
   },
   { timestamps: true }
 );

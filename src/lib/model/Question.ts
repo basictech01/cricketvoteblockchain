@@ -1,4 +1,4 @@
-import { Schema, model, models, Document } from 'mongoose';
+import { Schema, model, models, Document } from "mongoose";
 
 interface IQuestion extends Document {
   question: string;
@@ -8,7 +8,6 @@ interface IQuestion extends Document {
   updatedAt: Date;
   isActive: boolean;
   closedAt: Date;
-  hardness: number;
 }
 
 const QuestionSchema = new Schema<IQuestion>(
@@ -18,12 +17,12 @@ const QuestionSchema = new Schema<IQuestion>(
     answer: { type: String, default: null },
     isActive: { type: Boolean, default: true },
     closedAt: { type: Date, default: null },
-    hardness: { type: Number, default: 1 },
   },
   { timestamps: true }
 );
 
-const Question = models.Question || model<IQuestion>('Question', QuestionSchema);
+const Question =
+  models.Question || model<IQuestion>("Question", QuestionSchema);
 
 export default Question;
 
