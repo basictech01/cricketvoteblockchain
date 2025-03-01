@@ -5,7 +5,6 @@ import { IUser } from './User';
 interface IBet extends Document {
   question: IQuestion;
   user: IUser;
-  amount: number;
   createdAt: Date;
   updatedAt: Date;
 }

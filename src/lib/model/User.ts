@@ -21,7 +21,6 @@ const UserSchema = new Schema<IUser>(
     provider: { type: String, required: true },
     balance: { type: Number, default: 100 },
     publicKey: { type: String },
-    privateKey: { type: String },
   },
   { timestamps: true }
 );
