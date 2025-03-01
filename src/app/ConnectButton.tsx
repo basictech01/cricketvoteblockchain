@@ -5,6 +5,7 @@ import type React from "react";
 import { useState } from "react";
 import { useConnect, useAccount, useDisconnect, type Connector } from "wagmi";
 import { motion } from "framer-motion";
+import { useTheme } from "next-themes";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +47,9 @@ import {
   Copy,
   Check,
   ExternalLink,
+  Moon,
+  Sun,
+  Laptop,
   AlertCircle,
   ShieldCheck,
 } from "lucide-react";
@@ -83,6 +87,7 @@ export function ConnectButton() {
   const { disconnect } = useDisconnect();
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const { theme, setTheme } = useTheme();
 
   // Format address for display
   const formatAddress = (addr: string | undefined): string => {
@@ -201,6 +206,7 @@ export function ConnectButton() {
               </Tooltip>
             </DropdownMenuGroup>
 
+           
             <DropdownMenuSeparator />
             <DropdownMenuItem
               className="flex items-center gap-2 text-destructive cursor-pointer focus:text-destructive"
