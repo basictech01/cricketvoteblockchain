@@ -829,16 +829,16 @@ function DashBoard() {
                                   <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-4">
                                       <img
-                                        src={
-                                          getTeamLogo(
-                                            matches[currentMatchIndex].teamA
-                                          ) || "/placeholder.svg"
-                                        }
-                                        alt={matches[currentMatchIndex].teamA}
-                                        className="w-20 h-20 "
+                                      src={
+                                        getTeamLogo(
+                                        matches[currentMatchIndex].teamA
+                                        ) || "/placeholder.svg"
+                                      }
+                                      alt={matches[currentMatchIndex].teamA}
+                                      className="h-auto max-h-32"
                                       />
                                       <span className="text-xl font-bold">
-                                        {matches[currentMatchIndex].teamA}
+                                      {matches[currentMatchIndex].teamA}
                                       </span>
                                     </div>
                                     <span className="text-xl font-bold">
@@ -855,7 +855,7 @@ function DashBoard() {
                                           ) || "/placeholder.svg"
                                         }
                                         alt={matches[currentMatchIndex].teamB}
-                                        className="h-10 w-10"
+                                        className="h-auto max-h-32"
                                       />
                                     </div>
                                   </div>
