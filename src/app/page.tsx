@@ -59,7 +59,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { motion, AnimatePresence } from "framer-motion";
-import { toast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -274,17 +273,10 @@ function DashBoard() {
   const handleSwitchToSepolia = async () => {
     try {
       switchChain({ chainId: sepolia.id });
-      toast({
-        title: "Network Switching",
-        description: "Switching to Sepolia testnet...",
-      });
+     
     } catch (error) {
       console.error("Failed to switch network:", error);
-      toast({
-        title: "Error",
-        description: "Failed to switch network. Please try manually.",
-        variant: "destructive",
-      });
+     
     }
   };
 
@@ -323,20 +315,12 @@ function DashBoard() {
 
   const handleBet = async (questionId: string) => {
     if (!address) {
-      toast({
-        title: "Error",
-        description: "Please connect your wallet first.",
-        variant: "destructive",
-      });
+      
       return;
     }
 
     if (!selectedOption[questionId]) {
-      toast({
-        title: "Error",
-        description: "Please select an option first.",
-        variant: "destructive",
-      });
+     
       return;
     }
 
@@ -387,11 +371,7 @@ function DashBoard() {
         }
       }
 
-      toast({
-        title: "Success",
-        description: "Your prediction has been placed successfully!",
-        variant: "default",
-      });
+      
 
       // Reset selected option for this question
       setSelectedOption((prev) => ({
@@ -400,12 +380,7 @@ function DashBoard() {
       }));
     } catch (error) {
       console.error("Error placing bet:", error);
-      toast({
-        title: "Error",
-        description:
-          "There was an error placing your prediction. Please try again.",
-        variant: "destructive",
-      });
+     
     } finally {
       setIsPlacingBet(false);
     }
@@ -835,7 +810,7 @@ function DashBoard() {
                                         ) || "/placeholder.svg"
                                       }
                                       alt={matches[currentMatchIndex].teamA}
-                                      className="h-auto max-h-32"
+                                      className="h-auto max-h-3"
                                       />
                                       <span className="text-xl font-bold">
                                       {matches[currentMatchIndex].teamA}
@@ -855,7 +830,7 @@ function DashBoard() {
                                           ) || "/placeholder.svg"
                                         }
                                         alt={matches[currentMatchIndex].teamB}
-                                        className="h-auto max-h-32"
+                                        className="h-auto max-h-3"
                                       />
                                     </div>
                                   </div>
