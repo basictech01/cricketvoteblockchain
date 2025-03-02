@@ -107,7 +107,7 @@ function DashBoard() {
 
   const { data: tokenBalance, isLoading: isBalanceLoading } = useReadContract({
     abi,
-    address: "0xAaD3edE66EDa939C1d5876874A31798E02d3fdd2",
+    address: "0x66f8ECD191AF7F90bc4Fe82629d525e5AB9FDf4C",
     functionName: "balanceOf",
     args: [address],
   });
@@ -130,49 +130,7 @@ function DashBoard() {
 
     fetchMatches();
   }, []);
-
-  // Sample data for the dashboard
-  // const upcomingMatches = [
-  //   { id: 1, teams: "India vs Australia", date: "2024-03-10", time: "14:00" },
-  //   {
-  //     id: 2,
-  //     teams: "England vs South Africa",
-  //     date: "2024-03-12",
-  //     time: "15:30",
-  //   },
-  //   {
-  //     id: 3,
-  //     teams: "New Zealand vs Pakistan",
-  //     date: "2024-03-15",
-  //     time: "13:00",
-  //   },
-  // ];
-
-  // const recentPredictions = [
-  //   {
-  //     id: 1,
-  //     match: "India vs Sri Lanka",
-  //     prediction: "India",
-  //     result: "Won",
-  //     reward: 25,
-  //   },
-  //   {
-  //     id: 2,
-  //     match: "Australia vs England",
-  //     prediction: "England",
-  //     result: "Lost",
-  //     reward: 0,
-  //   },
-  //   {
-  //     id: 3,
-  //     match: "Pakistan vs Bangladesh",
-  //     prediction: "Pakistan",
-  //     result: "Won",
-  //     reward: 15,
-  //   },
-  // ];
-
-  // Check if user is on Sepolia network
+  
   useEffect(() => {
     if (isConnected && chain && chain.id !== sepolia.id) {
       setShowNetworkDialog(true);
@@ -218,13 +176,15 @@ function DashBoard() {
     }
 
     try {
+      console.log("sdfd")
       // Call the smart contract to place the bet
       writeContract({
-        address: "0xAaD3edE66EDa939C1d5876874A31798E02d3fdd2",
+        address: "0x66f8ECD191AF7F90bc4Fe82629d525e5AB9FDf4C",
         abi: abi,
         functionName: "Vote",
-        args: [address],
+        // args: [address],
       });
+
 
       // Wait for the transaction to be mined
 

@@ -13,7 +13,6 @@ export type { IUser };
 
 const UserSchema = new Schema<IUser>(
   {
-    email: { type: String, unique: true },
     name: { type: String },
     provider: { type: String },
     address: { type: String, required: true, unique: true },
