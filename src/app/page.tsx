@@ -220,10 +220,10 @@ function DashBoard() {
     try {
       // Call the smart contract to place the bet
       writeContract({
-        address: "0xYourContractAddress",
+        address: "0xAaD3edE66EDa939C1d5876874A31798E02d3fdd2",
         abi: abi,
-        functionName: "placeBet",
-        args: [questionId, option],
+        functionName: "Vote",
+        args: [address],
       });
 
       // Wait for the transaction to be mined
