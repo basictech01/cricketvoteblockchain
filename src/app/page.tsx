@@ -138,7 +138,7 @@ function DashBoard() {
   // Handle network switch
   const handleSwitchToSepolia = async () => {
     try {
-      await switchChain({ chainId: sepolia.id });
+      switchChain({ chainId: sepolia.id });
     } catch (error) {
       console.error("Failed to switch network:", error);
     }
