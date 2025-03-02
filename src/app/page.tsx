@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { WagmiProvider, createConfig, http, useReadContract } from "wagmi";
+import {
+  WagmiProvider,
+  createConfig,
+  http,
+  useReadContract,
+  useWriteContract,
+} from "wagmi";
 import { coinbaseWallet, walletConnect } from "wagmi/connectors";
 import { sepolia, mainnet, polygon } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -14,19 +20,17 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Coins,
-  Calendar,
-  Clock,
   ArrowRight,
   AlertTriangle,
   Wallet,
   BarChart3,
   BirdIcon as Cricket,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { useAccount } from "wagmi";
 import abi from "../abis/Vote.json";
@@ -40,6 +44,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "@/hooks/use-toast";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -72,11 +79,31 @@ export default function Home() {
   );
 }
 
+interface Match {
+  _id: string;
+  teamA: string;
+  teamB: string;
+  matchDate: string;
+  questions: Question[];
+}
+
+interface Question {
+  _id: string;
+  question: string;
+  options: string[];
+  isActive: boolean;
+  closedAt: string;
+}
+
 function DashBoard() {
   const { chains, switchChain } = useSwitchChain();
   const { chain } = useAccount();
   const { address, isConnected } = useAccount();
   const [showNetworkDialog, setShowNetworkDialog] = useState(false);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
 
   const { data: tokenBalance, isLoading: isBalanceLoading } = useReadContract({
     abi,
@@ -85,46 +112,65 @@ function DashBoard() {
     args: [address],
   });
 
-  // Sample data for the dashboard
-  const upcomingMatches = [
-    { id: 1, teams: "India vs Australia", date: "2024-03-10", time: "14:00" },
-    {
-      id: 2,
-      teams: "England vs South Africa",
-      date: "2024-03-12",
-      time: "15:30",
-    },
-    {
-      id: 3,
-      teams: "New Zealand vs Pakistan",
-      date: "2024-03-15",
-      time: "13:00",
-    },
-  ];
+  const { writeContract } = useWriteContract();
 
-  const recentPredictions = [
-    {
-      id: 1,
-      match: "India vs Sri Lanka",
-      prediction: "India",
-      result: "Won",
-      reward: 25,
-    },
-    {
-      id: 2,
-      match: "Australia vs England",
-      prediction: "England",
-      result: "Lost",
-      reward: 0,
-    },
-    {
-      id: 3,
-      match: "Pakistan vs Bangladesh",
-      prediction: "Pakistan",
-      result: "Won",
-      reward: 15,
-    },
-  ];
+  useEffect(() => {
+    const fetchMatches = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch("/api/layout/fetch");
+        const data = await response.json();
+        setMatches(data.matches);
+      } catch (error) {
+        console.error("Error fetching matches:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMatches();
+  }, []);
+
+  // Sample data for the dashboard
+  // const upcomingMatches = [
+  //   { id: 1, teams: "India vs Australia", date: "2024-03-10", time: "14:00" },
+  //   {
+  //     id: 2,
+  //     teams: "England vs South Africa",
+  //     date: "2024-03-12",
+  //     time: "15:30",
+  //   },
+  //   {
+  //     id: 3,
+  //     teams: "New Zealand vs Pakistan",
+  //     date: "2024-03-15",
+  //     time: "13:00",
+  //   },
+  // ];
+
+  // const recentPredictions = [
+  //   {
+  //     id: 1,
+  //     match: "India vs Sri Lanka",
+  //     prediction: "India",
+  //     result: "Won",
+  //     reward: 25,
+  //   },
+  //   {
+  //     id: 2,
+  //     match: "Australia vs England",
+  //     prediction: "England",
+  //     result: "Lost",
+  //     reward: 0,
+  //   },
+  //   {
+  //     id: 3,
+  //     match: "Pakistan vs Bangladesh",
+  //     prediction: "Pakistan",
+  //     result: "Won",
+  //     reward: 15,
+  //   },
+  // ];
 
   // Check if user is on Sepolia network
   useEffect(() => {
@@ -148,6 +194,72 @@ function DashBoard() {
   const formatAddress = (address: string | undefined) => {
     if (!address) return "";
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const handleBet = async (questionId: string, option: string) => {
+    if (!address) {
+      toast({
+        title: "Error",
+        description: "Please connect your wallet first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Call the smart contract to place the bet
+      writeContract({
+        address: "0xYourContractAddress",
+        abi: abi,
+        functionName: "placeBet",
+        args: [questionId, option],
+      });
+
+      // Wait for the transaction to be mined
+
+      // Call the backend API to create a betting instance
+      const response = await fetch("/api/bet/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          address,
+          questionId,
+          option,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create betting instance");
+      }
+
+      toast({
+        title: "Success",
+        description: "Your bet has been placed successfully!",
+      });
+
+      // Close the match detail modal
+      setSelectedMatch(null);
+    } catch (error) {
+      console.error("Error placing bet:", error);
+      toast({
+        title: "Error",
+        description: "There was an error placing your bet. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -184,7 +296,9 @@ function DashBoard() {
                   </div>
                   {chain && (
                     <Badge
-                      variant={chain?.id === sepolia.id ? "default" : "destructive"}
+                      variant={
+                        chain?.id === sepolia.id ? "default" : "destructive"
+                      }
                       className="mt-2"
                     >
                       {chains.find((c) => c.id === chain?.id)?.name ||
@@ -232,76 +346,142 @@ function DashBoard() {
               </Card>
             </div>
 
-            {/* Dashboard tabs */}
-            <Tabs defaultValue="upcoming" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="upcoming">Upcoming Matches</TabsTrigger>
-                <TabsTrigger value="predictions">Your Predictions</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="upcoming">
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {upcomingMatches.map((match) => (
-                    <Card key={match.id}>
-                      <CardHeader>
-                        <CardTitle>{match.teams}</CardTitle>
-                        <CardDescription>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>{match.date}</span>
-                          </div>
-                          <div className="flex items-center gap-1 mt-1">
-                            <Clock className="h-3 w-3" />
-                            <span>{match.time} UTC</span>
-                          </div>
-                        </CardDescription>
-                      </CardHeader>
-                      <CardFooter>
-                        <Button className="w-full">
-                          Make Prediction
-                          <ArrowRight className="ml-2 h-4 w-4" />
+            {/* Matches Carousel */}
+            <Card className="mb-6 overflow-hidden">
+              <CardHeader>
+                <CardTitle>Upcoming Matches</CardTitle>
+                <CardDescription>
+                  Swipe or use arrows to navigate matches
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="relative">
+                {isLoading ? (
+                  <Skeleton className="h-64 w-full" />
+                ) : (
+                  <>
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={currentMatchIndex}
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -50 }}
+                        transition={{ duration: 0.3 }}
+                        className="bg-card text-card-foreground p-6 rounded-lg shadow-lg"
+                      >
+                        <h3 className="text-2xl font-bold mb-2">
+                          {matches[currentMatchIndex].teamA} vs{" "}
+                          {matches[currentMatchIndex].teamB}
+                        </h3>
+                        <p className="text-muted-foreground mb-4">
+                          {formatDate(matches[currentMatchIndex].matchDate)}
+                        </p>
+                        <Button
+                          onClick={() =>
+                            setSelectedMatch(matches[currentMatchIndex])
+                          }
+                        >
+                          View Details & Bet
                         </Button>
-                      </CardFooter>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
+                      </motion.div>
+                    </AnimatePresence>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="absolute top-1/2 left-2 transform -translate-y-1/2"
+                      onClick={() =>
+                        setCurrentMatchIndex((prev) =>
+                          prev > 0 ? prev - 1 : matches.length - 1
+                        )
+                      }
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="absolute top-1/2 right-2 transform -translate-y-1/2"
+                      onClick={() =>
+                        setCurrentMatchIndex((prev) =>
+                          prev < matches.length - 1 ? prev + 1 : 0
+                        )
+                      }
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
-              <TabsContent value="predictions">
-                <div className="grid gap-4">
-                  {recentPredictions.map((prediction) => (
-                    <Card key={prediction.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className="font-medium">{prediction.match}</h3>
-                            <p className="text-sm text-muted-foreground">
-                              Predicted: {prediction.prediction}
-                            </p>
+            {/* Match Detail Modal */}
+            <Dialog
+              open={!!selectedMatch}
+              onOpenChange={() => setSelectedMatch(null)}
+            >
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {selectedMatch?.teamA} vs {selectedMatch?.teamB}
+                  </DialogTitle>
+                  <DialogDescription>
+                    {formatDate(selectedMatch?.matchDate || "")}
+                  </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh]">
+                  <div className="space-y-4 p-4">
+                    {selectedMatch?.questions.map((question) => (
+                      <Card key={question._id}>
+                        <CardHeader>
+                          <CardTitle className="text-lg">
+                            {question.question}
+                          </CardTitle>
+                          <CardDescription>
+                            Closes at: {formatDate(question.closedAt)}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex flex-wrap gap-2">
+                            {question.options.map((option, index) => (
+                              <Button
+                                key={index}
+                                variant="outline"
+                                onClick={() => handleBet(question._id, option)}
+                              >
+                                {option}
+                              </Button>
+                            ))}
                           </div>
-                          <div className="text-right">
-                            <Badge
-                              variant={
-                                prediction.result === "Won"
-                                  ? "default"
-                                  : "destructive"
-                              }
-                            >
-                              {prediction.result}
-                            </Badge>
-                            <p className="text-sm mt-1">
-                              {prediction.reward > 0
-                                ? `+${prediction.reward} CPT`
-                                : "No reward"}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedMatch(null)}
+                  >
+                    Close
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Your Predictions (placeholder) */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Predictions</CardTitle>
+                <CardDescription>
+                  Track your recent predictions and rewards
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {/* TODO: Implement user predictions */}
+                <p className="text-muted-foreground">
+                  You haven&apos;t made any predictions yet.
+                </p>
+              </CardContent>
+            </Card>
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-12">
@@ -337,7 +517,8 @@ function DashBoard() {
           <div className="flex items-center gap-2 py-2">
             <Badge variant="outline" className="text-muted-foreground">
               Current:{" "}
-              {chains.find((c) => c.id === chain?.id)?.name || "Unknown Network"}
+              {chains.find((c) => c.id === chain?.id)?.name ||
+                "Unknown Network"}
             </Badge>
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
             <Badge>Required: Sepolia</Badge>
