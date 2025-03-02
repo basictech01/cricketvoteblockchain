@@ -1,10 +1,8 @@
 import { Schema, model, models, Document } from 'mongoose';
-import { IQuestion } from './Question';
-import { IUser } from './User';
 
 interface IBet extends Document {
-  question: IQuestion;
-  user: IUser;
+  question: string;
+  user: string;
   amount: number;
   createdAt: Date;
   updatedAt: Date;
@@ -12,8 +10,8 @@ interface IBet extends Document {
 
 const BetSchema = new Schema<IBet>(
   {
-    question: { type: Schema.Types.ObjectId, ref: 'Question', required: true },
-    user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    question: { type: Schema.Types.String, ref: 'Question', required: true },
+    user: { type: Schema.Types.String, ref: 'User', required: true },
   },
   { timestamps: true }
 );

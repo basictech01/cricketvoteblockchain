@@ -8,11 +8,13 @@ interface IQuestion extends Document {
   updatedAt: Date;
   isActive: boolean;
   closedAt: Date;
+  matchId: string;
 }
 
 const QuestionSchema = new Schema<IQuestion>(
   {
     question: { type: String, required: true },
+    matchId: { type: Schema.Types.String, ref: "Match", required: true },
     options: { type: [String], required: true },
     answer: { type: String, default: null },
     isActive: { type: Boolean, default: true },
