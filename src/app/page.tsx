@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useState, useEffect } from "react";
 import {
@@ -43,6 +44,7 @@ import {
   Bell,
   Menu,
   Flame,
+  Star,
   Loader2,
 } from "lucide-react";
 import abi from "../abis/Vote.json";
@@ -60,6 +62,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Sheet,
   SheetContent,
@@ -67,7 +70,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -105,7 +113,6 @@ interface Match {
   teamA: string;
   teamB: string;
   matchDate: string;
-  questions: Question[];
 }
 
 interface Question {
@@ -124,7 +131,6 @@ interface Prediction {
   date: string;
   status: "pending" | "won" | "lost";
   reward?: number;
-  accuracy?: number;
 }
 
 function DashBoard() {
@@ -139,14 +145,13 @@ function DashBoard() {
   const [selectedOption, setSelectedOption] = useState<{
     [key: string]: string;
   }>({});
-  const [loadingQuestions, setLoadingQuestions] = useState<{
-    [key: string]: boolean;
-  }>({});
-  const [, setActiveTab] = useState("upcoming");
+  const [isPlacingBet, setIsPlacingBet] = useState(false);
+  const [activeTab, setActiveTab] = useState("upcoming");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [matchQuestions, setMatchQuestions] = useState<Question[]>([]);
-  const [isLoadingQuestions, setIsLoadingQuestions] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [isQuestionLoading, setIsQuestionLoading] = useState(false);
 
+  // Mock predictions data
   const [predictions, setPredictions] = useState<Prediction[]>([
     {
       id: "1",
@@ -156,7 +161,6 @@ function DashBoard() {
       date: "2023-11-15T10:00:00",
       status: "won",
       reward: 120,
-      accuracy: 92,
     },
     {
       id: "2",
@@ -165,7 +169,6 @@ function DashBoard() {
       selectedOption: "Yes",
       date: "2023-11-12T14:30:00",
       status: "lost",
-      accuracy: 45,
     },
     {
       id: "3",
@@ -174,7 +177,6 @@ function DashBoard() {
       selectedOption: "More than 10",
       date: "2023-11-18T09:15:00",
       status: "pending",
-      accuracy: 78,
     },
   ]);
 
@@ -185,7 +187,8 @@ function DashBoard() {
     args: [address],
   });
 
-  const { writeContractAsync, isPending } = useWriteContract();
+  // Updated to use the latest wagmi hooks correctly
+  const { writeContractAsync, isPending, isError, error } = useWriteContract();
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -193,69 +196,17 @@ function DashBoard() {
       try {
         const response = await fetch("/api/layout/matches");
         const data = await response.json();
+        console.log(data.matches);
         setMatches(data.matches);
       } catch (error) {
         console.error("Error fetching matches:", error);
-        setMatches([
-          {
-            _id: "1",
-            teamA: "India",
-            teamB: "Australia",
-            matchDate: new Date(Date.now() + 86400000 * 2).toISOString(),
-            questions: [],
-          },
-          {
-            _id: "2",
-            teamA: "England",
-            teamB: "South Africa",
-            matchDate: new Date(Date.now() + 86400000 * 4).toISOString(),
-            questions: [],
-          },
-          {
-            _id: "3",
-            teamA: "Pakistan",
-            teamB: "New Zealand",
-            matchDate: new Date(Date.now() + 86400000 * 6).toISOString(),
-            questions: [],
-          },
-        ]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchMatches();
-  }, []);
-
-  useEffect(() => {
-    const fetchQuestions = async () => {
-      if (!selectedMatch) return;
-
-      setIsLoadingQuestions(true);
-      try {
-        const response = await fetch("/api/layout/questions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ matchId: selectedMatch._id }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch questions");
-        }
-
-        const data = await response.json();
-        setMatchQuestions(data.questions);
-      } catch (error) {
-        console.error("Error fetching questions:", error);
-      } finally {
-        setIsLoadingQuestions(false);
-      }
-    };
-
-    fetchQuestions();
-  }, [selectedMatch]);
+  }, [address]);
 
   useEffect(() => {
     if (isConnected && chain && chain.id !== sepolia.id) {
@@ -265,6 +216,7 @@ function DashBoard() {
     }
   }, [chain, isConnected]);
 
+  // Handle network switch
   const handleSwitchToSepolia = async () => {
     try {
       switchChain({ chainId: sepolia.id });
@@ -273,6 +225,7 @@ function DashBoard() {
     }
   };
 
+  // Format address for display
   const formatAddress = (address: string | undefined) => {
     if (!address) return "";
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
@@ -307,19 +260,14 @@ function DashBoard() {
 
   const handleBet = async (questionId: string) => {
     if (!address) {
-      toast.error("Please connect your wallet first");
       return;
     }
 
     if (!selectedOption[questionId]) {
-      toast.error("Please select an option first");
       return;
     }
 
-    setLoadingQuestions((prev) => ({
-      ...prev,
-      [questionId]: true,
-    }));
+    setIsPlacingBet(true);
 
     try {
       await writeContractAsync({
@@ -328,6 +276,7 @@ function DashBoard() {
         functionName: "vote",
       });
 
+      // Call the backend API to create a betting instance
       const response = await fetch("/api/bet/create", {
         method: "POST",
         headers: {
@@ -344,11 +293,10 @@ function DashBoard() {
         throw new Error("Failed to create betting instance");
       }
 
+      // Add to predictions
       if (selectedMatch) {
-        const question = matchQuestions.find((q) => q._id === questionId);
+        const question = questions.find((q) => q._id === questionId);
         if (question) {
-          const confidenceScore = Math.floor(Math.random() * 30) + 70;
-
           const newPrediction: Prediction = {
             id: Date.now().toString(),
             match: `${selectedMatch.teamA} vs ${selectedMatch.teamB}`,
@@ -356,30 +304,26 @@ function DashBoard() {
             selectedOption: selectedOption[questionId],
             date: new Date().toISOString(),
             status: "pending",
-            accuracy: confidenceScore,
           };
 
           setPredictions((prev) => [newPrediction, ...prev]);
-          toast.success("Prediction placed successfully!");
         }
       }
 
+      // Reset selected option for this question
       setSelectedOption((prev) => ({
         ...prev,
         [questionId]: "",
       }));
     } catch (error) {
       console.error("Error placing bet:", error);
-      toast.error("Failed to place prediction. Please try again.");
     } finally {
-      setLoadingQuestions((prev) => ({
-        ...prev,
-        [questionId]: false,
-      }));
+      setIsPlacingBet(false);
     }
   };
 
   const getTeamLogo = (teamName: string) => {
+    // This would ideally fetch actual team logos
     const teamLogos: Record<string, string> = {
       "Chennai Super Kings":
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhn3plcgt5OnAx_VelXAj9Z8TWBiqg6B-xgCJ__kuFeXr1ClntuhvVu0IugURU6TfyHk9qUuECEpos1E5ayEmx0fAupMIvNLQnLOwavDhBYxkIwvRv9cmm7_qHZmlcSwr3Un-hJpy92AooR9Qn77PUcr4yRgAORYwoTBjTYOmyYlHbZ0nDyaL3HWqUk/s2141/Original%20Chennai%20Super%20Fun%20Logo%20PNG%20-%20SVG%20File%20Download%20Free%20Download.png",
@@ -403,6 +347,14 @@ function DashBoard() {
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijb28SNOESbzSkJ5J8-YuxEweSWpHRLhF_uQ5Ceah9b61K8ytbL8fwmK9oMKbM2-ZZxlualj5wlNPlriod0mdrFFXBSx0dj0-_4DQIXwZmGkleqqiIpr0GmV7V8dkYbLXisxjWUPtf4joGikLHSiExgCpaO477APLpjA8_pGhnlvUEAJM4_TvabF85/s7201/Original%20Lucknow%20Super%20Giants%20PNG-SVG%20File%20Download%20Free%20Download.png",
     };
 
+    const getTeamLogo = (teamName: string): string => {
+      return (
+        teamLogos[teamName] ||
+        `/placeholder.svg?height=40&width=40&text=${teamName
+          .slice(0, 3)
+          .toUpperCase()}`
+      );
+    };
     return (
       teamLogos[teamName] ||
       `/placeholder.svg?height=40&width=40&text=${teamName
@@ -433,12 +385,46 @@ function DashBoard() {
     }
   };
 
-  const getAccuracyColor = (accuracy = 0) => {
-    if (accuracy >= 80) return "text-green-500";
-    if (accuracy >= 60) return "text-yellow-500";
-    return "text-red-500";
-  };
+  useEffect(() => {
+    async function f() {
+      if (selectedMatch) {
+        const res = await fetch(`/api/layout/questions/${selectedMatch._id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setQuestions([
+            {
+              _id: "1",
+              question: "Which team will win the toss?",
+              options: ["India", "Australia"],
+              isActive: true,
+              closedAt: new Date(Date.now() + 86400000 * 2).toISOString(),
+            },
+            {
+              _id: "2",
+              question: "Total sixes in the match?",
+              options: ["Less than 10", "More than 10"],
+              isActive: true,
+              closedAt: new Date(Date.now() + 86400000 * 2).toISOString(),
+            },
+          ]);
+          return;
+        }
+        console.log(data);
 
+        setQuestions(data.questions);
+      } else {
+        setQuestions([]);
+      }
+    }
+    f();
+  }, [selectedMatch]);
+
+  // Sidebar navigation items
   const navItems = [
     { icon: <Trophy className="h-5 w-5" />, label: "Matches", active: true },
     { icon: <Users className="h-5 w-5" />, label: "Leaderboard" },
@@ -447,33 +433,28 @@ function DashBoard() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/95 dark:from-background dark:to-background">
       {/* Mobile Menu */}
       <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <SheetContent
-          side="left"
-          className="w-[300px] sm:w-[400px] p-0 bg-black border-gray-800"
-        >
-          <SheetHeader className="p-6 border-b border-gray-800">
-            <SheetTitle className="flex items-center gap-2 text-white">
+        <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
+          <SheetHeader className="p-6 border-b">
+            <SheetTitle className="flex items-center gap-2">
               <Cricket className="h-6 w-6 text-primary" />
               <span>Cricket Prophet</span>
             </SheetTitle>
-            <SheetDescription className="text-gray-400">
+            <SheetDescription>
               Make predictions on cricket matches
             </SheetDescription>
           </SheetHeader>
           <div className="py-4">
             {isConnected && (
-              <div className="px-6 py-4 border-b border-gray-800">
+              <div className="px-6 py-4 border-b">
                 <div className="flex items-center gap-3 mb-4">
                   <Avatar className="h-10 w-10 border-2 border-primary">
                     <AvatarFallback>{address?.slice(2, 4)}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium text-white">
-                      {formatAddress(address)}
-                    </p>
+                    <p className="font-medium">{formatAddress(address)}</p>
                     <Badge
                       variant={
                         chain?.id === sepolia.id ? "default" : "destructive"
@@ -488,13 +469,13 @@ function DashBoard() {
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-1">
                     <Coins className="h-4 w-4 text-primary" />
-                    <span className="text-gray-300">
+                    <span>
                       {tokenBalance ? tokenBalance.toString() : "0"} CPT
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Trophy className="h-4 w-4 text-primary" />
-                    <span className="text-gray-300">67% Win Rate</span>
+                    <span>67% Win Rate</span>
                   </div>
                 </div>
               </div>
@@ -515,7 +496,7 @@ function DashBoard() {
                 ))}
               </ul>
             </nav>
-            <div className="px-6 pt-4 mt-4 border-t border-gray-800">
+            <div className="px-6 pt-4 mt-4 border-t">
               {!isConnected ? (
                 <ConnectButton />
               ) : (
@@ -535,8 +516,8 @@ function DashBoard() {
       {/* Desktop Layout */}
       <div className="flex min-h-screen">
         {/* Sidebar - Desktop only */}
-        <aside className="hidden lg:flex flex-col w-64 border-r border-gray-800 bg-black">
-          <div className="p-6 border-b border-gray-800">
+        <aside className="hidden lg:flex flex-col w-64 border-r bg-card/50 backdrop-blur-sm">
+          <div className="p-6 border-b">
             <div className="flex items-center gap-2 mb-2">
               <motion.div
                 initial={{ rotate: -10 }}
@@ -553,21 +534,19 @@ function DashBoard() {
                 Cricket Prophet
               </h1>
             </div>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground">
               Predict & win with blockchain
             </p>
           </div>
 
           {isConnected && (
-            <div className="p-4 border-b border-gray-800">
+            <div className="p-4 border-b">
               <div className="flex items-center gap-3 mb-4">
                 <Avatar className="h-10 w-10 border-2 border-primary">
                   <AvatarFallback>{address?.slice(2, 4)}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium text-white">
-                    {formatAddress(address)}
-                  </p>
+                  <p className="font-medium">{formatAddress(address)}</p>
                   <Badge
                     variant={
                       chain?.id === sepolia.id ? "default" : "destructive"
@@ -582,13 +561,13 @@ function DashBoard() {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center gap-1">
                   <Coins className="h-4 w-4 text-primary" />
-                  <span className="text-gray-300">
+                  <span>
                     {tokenBalance ? tokenBalance.toString() : "0"} CPT
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Trophy className="h-4 w-4 text-primary" />
-                  <span className="text-gray-300">67% Win Rate</span>
+                  <span>67% Win Rate</span>
                 </div>
               </div>
             </div>
@@ -610,8 +589,9 @@ function DashBoard() {
             </ul>
           </nav>
 
-          <div className="p-4 border-t border-gray-800 mt-auto">
+          <div className="p-4 border-t mt-auto">
             <div className="flex items-center justify-between">
+              <ThemeToggle />
               {!isConnected && <ConnectButton />}
             </div>
           </div>
@@ -620,7 +600,7 @@ function DashBoard() {
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-md border-b border-gray-800">
+          <header className="sticky top-0 z-10 backdrop-blur-md bg-background/80 border-b">
             <div className="container flex h-16 items-center justify-between px-4">
               <div className="flex items-center gap-2 lg:hidden">
                 <Button
@@ -635,9 +615,12 @@ function DashBoard() {
                 </h1>
               </div>
               <div className="hidden lg:block">
-                <h2 className="text-xl font-bold text-white">Dashboard</h2>
+                <h2 className="text-xl font-bold">Dashboard</h2>
               </div>
               <div className="flex items-center gap-4">
+                <div className="hidden md:flex items-center gap-2">
+                  <ThemeToggle />
+                </div>
                 <ConnectButton />
               </div>
             </div>
@@ -654,9 +637,9 @@ function DashBoard() {
                   transition={{ duration: 0.5 }}
                   className="lg:hidden grid gap-4 md:grid-cols-3 mb-6"
                 >
-                  <Card className="overflow-hidden border-primary/20 hover:border-primary/50 transition-colors duration-300 bg-gray-900">
+                  <Card className="overflow-hidden border-primary/20 hover:border-primary/50 transition-colors duration-300">
                     <CardHeader className="pb-2 bg-primary/5">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <Wallet className="h-4 w-4 text-primary" />
                         Wallet
                       </CardTitle>
@@ -668,7 +651,7 @@ function DashBoard() {
                             {address?.slice(2, 4)}
                           </AvatarFallback>
                         </Avatar>
-                        <p className="text-xl font-bold text-white">
+                        <p className="text-xl font-bold">
                           {formatAddress(address)}
                         </p>
                       </div>
@@ -686,16 +669,16 @@ function DashBoard() {
                     </CardContent>
                   </Card>
 
-                  <Card className="overflow-hidden border-primary/20 hover:border-primary/50 transition-colors duration-300 bg-gray-900">
+                  <Card className="overflow-hidden border-primary/20 hover:border-primary/50 transition-colors duration-300">
                     <CardHeader className="pb-2 bg-primary/5">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <Coins className="h-4 w-4 text-primary" />
                         Token Balance
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-4">
                       {isBalanceLoading ? (
-                        <Skeleton className="h-8 w-24 bg-gray-700" />
+                        <Skeleton className="h-8 w-24" />
                       ) : (
                         <div className="flex items-center gap-2">
                           <div className="relative">
@@ -704,7 +687,7 @@ function DashBoard() {
                               <Coins className="h-4 w-4 text-primary" />
                             </div>
                           </div>
-                          <p className="text-xl font-bold text-white">
+                          <p className="text-xl font-bold">
                             {tokenBalance ? tokenBalance.toString() : "0"}
                             <span className="text-primary ml-1">CPT</span>
                           </p>
@@ -713,9 +696,9 @@ function DashBoard() {
                     </CardContent>
                   </Card>
 
-                  <Card className="overflow-hidden border-primary/20 hover:border-primary/50 transition-colors duration-300 bg-gray-900">
+                  <Card className="overflow-hidden border-primary/20 hover:border-primary/50 transition-colors duration-300">
                     <CardHeader className="pb-2 bg-primary/5">
-                      <CardTitle className="text-sm font-medium flex items-center gap-2 text-white">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
                         <BarChart3 className="h-4 w-4 text-primary" />
                         Prediction Stats
                       </CardTitle>
@@ -725,12 +708,10 @@ function DashBoard() {
                         <div className="relative h-8 w-8 rounded-full bg-primary/30 flex items-center justify-center">
                           <Trophy className="h-4 w-4 text-primary" />
                         </div>
-                        <p className="text-xl font-bold text-white">
-                          67% Win Rate
-                        </p>
+                        <p className="text-xl font-bold">67% Win Rate</p>
                       </div>
                       <div className="mt-2">
-                        <div className="flex justify-between text-xs mb-1 text-gray-400">
+                        <div className="flex justify-between text-xs mb-1">
                           <span>10 wins</span>
                           <span>15 total</span>
                         </div>
@@ -746,17 +727,17 @@ function DashBoard() {
                   className="mb-6"
                   onValueChange={setActiveTab}
                 >
-                  <TabsList className="grid w-full grid-cols-2 bg-gray-900">
+                  <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger
                       value="upcoming"
-                      className="flex items-center gap-2 data-[state=active]:bg-primary"
+                      className="flex items-center gap-2"
                     >
                       <Calendar className="h-4 w-4" />
                       Upcoming Matches
                     </TabsTrigger>
                     <TabsTrigger
                       value="predictions"
-                      className="flex items-center gap-2 data-[state=active]:bg-primary"
+                      className="flex items-center gap-2"
                     >
                       <Sparkles className="h-4 w-4" />
                       Your Predictions
@@ -765,19 +746,17 @@ function DashBoard() {
 
                   {/* Upcoming Matches Tab */}
                   <TabsContent value="upcoming" className="mt-4">
-                    <Card className="overflow-hidden border-primary/20 bg-gray-900">
+                    <Card className="overflow-hidden border-primary/20">
                       <CardHeader className="bg-primary/5">
-                        <CardTitle className="text-white">
-                          Upcoming Matches
-                        </CardTitle>
-                        <CardDescription className="text-gray-400">
+                        <CardTitle>Upcoming Matches</CardTitle>
+                        <CardDescription>
                           Swipe or use arrows to navigate matches
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="relative p-0">
                         {isLoading ? (
                           <div className="p-6">
-                            <Skeleton className="h-64 w-full bg-gray-800" />
+                            <Skeleton className="h-64 w-full" />
                           </div>
                         ) : (
                           <div className="relative min-h-[300px]">
@@ -790,13 +769,13 @@ function DashBoard() {
                                 transition={{ duration: 0.3 }}
                                 className="p-6"
                               >
-                                <div className="bg-gray-800 text-white p-6 rounded-lg shadow-lg border border-primary/20">
+                                <div className="bg-card text-card-foreground p-6 rounded-lg shadow-lg border border-primary/20 dark:bg-card/50 dark:backdrop-blur-sm">
                                   <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-4">
                                       <img
                                         src={
                                           getTeamLogo(
-                                            matches[currentMatchIndex].teamA
+                                            matches[currentMatchIndex]?.teamA
                                           ) || "/placeholder.svg"
                                         }
                                         alt={matches[currentMatchIndex].teamA}
@@ -825,7 +804,7 @@ function DashBoard() {
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center gap-2 mb-6 text-gray-400">
+                                  <div className="flex items-center gap-2 mb-6 text-muted-foreground">
                                     <Calendar className="h-4 w-4" />
                                     <span>
                                       {formatDate(
@@ -862,7 +841,7 @@ function DashBoard() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="absolute top-1/2 left-2 transform -translate-y-1/2 rounded-full h-10 w-10 bg-black/80 backdrop-blur-sm"
+                              className="absolute top-1/2 left-2 transform -translate-y-1/2 rounded-full h-10 w-10 bg-background/80 backdrop-blur-sm"
                               onClick={() =>
                                 setCurrentMatchIndex((prev) =>
                                   prev > 0 ? prev - 1 : matches.length - 1
@@ -874,7 +853,7 @@ function DashBoard() {
                             <Button
                               variant="outline"
                               size="icon"
-                              className="absolute top-1/2 right-2 transform -translate-y-1/2 rounded-full h-10 w-10 bg-black/80 backdrop-blur-sm"
+                              className="absolute top-1/2 right-2 transform -translate-y-1/2 rounded-full h-10 w-10 bg-background/80 backdrop-blur-sm"
                               onClick={() =>
                                 setCurrentMatchIndex((prev) =>
                                   prev < matches.length - 1 ? prev + 1 : 0
@@ -888,7 +867,7 @@ function DashBoard() {
                       </CardContent>
                       <CardFooter className="bg-primary/5 py-3 px-6">
                         <div className="flex justify-between items-center w-full">
-                          <span className="text-sm text-gray-400">
+                          <span className="text-sm text-muted-foreground">
                             {!isLoading &&
                               `${currentMatchIndex + 1} of ${
                                 matches.length
@@ -915,33 +894,31 @@ function DashBoard() {
 
                   {/* Your Predictions Tab */}
                   <TabsContent value="predictions" className="mt-4">
-                    <Card className="overflow-hidden border-primary/20 bg-gray-900">
+                    <Card className="overflow-hidden border-primary/20">
                       <CardHeader className="bg-primary/5">
-                        <CardTitle className="text-white">
-                          Your Predictions
-                        </CardTitle>
-                        <CardDescription className="text-gray-400">
+                        <CardTitle>Your Predictions</CardTitle>
+                        <CardDescription>
                           Track your recent predictions and rewards
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="p-0">
                         <ScrollArea className="h-[400px]">
                           {predictions.length > 0 ? (
-                            <div className="divide-y divide-gray-800">
+                            <div className="divide-y">
                               {predictions.map((prediction) => (
                                 <motion.div
                                   key={prediction.id}
                                   initial={{ opacity: 0 }}
                                   animate={{ opacity: 1 }}
                                   transition={{ duration: 0.3 }}
-                                  className="p-4 hover:bg-gray-800/50 transition-colors"
+                                  className="p-4 hover:bg-muted/30 transition-colors"
                                 >
                                   <div className="flex justify-between items-start mb-2">
                                     <div>
-                                      <h3 className="font-medium text-white">
+                                      <h3 className="font-medium">
                                         {prediction.match}
                                       </h3>
-                                      <p className="text-sm text-gray-400">
+                                      <p className="text-sm text-muted-foreground">
                                         {prediction.question}
                                       </p>
                                     </div>
@@ -959,37 +936,26 @@ function DashBoard() {
                                       <Badge variant="secondary">
                                         {prediction.selectedOption}
                                       </Badge>
-                                      <span className="text-xs text-gray-400">
+                                      <span className="text-xs text-muted-foreground">
                                         {formatDate(prediction.date)}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-2">
-                                      {prediction.accuracy && (
-                                        <span
-                                          className={`text-xs font-medium ${getAccuracyColor(
-                                            prediction.accuracy
-                                          )}`}
-                                        >
-                                          {prediction.accuracy}% Confidence
+                                    {prediction.reward && (
+                                      <div className="flex items-center gap-1 text-green-500">
+                                        <Coins className="h-3 w-3" />
+                                        <span className="font-medium">
+                                          +{prediction.reward} CPT
                                         </span>
-                                      )}
-                                      {prediction.reward && (
-                                        <div className="flex items-center gap-1 text-green-500">
-                                          <Coins className="h-3 w-3" />
-                                          <span className="font-medium">
-                                            +{prediction.reward} CPT
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
+                                      </div>
+                                    )}
                                   </div>
                                 </motion.div>
                               ))}
                             </div>
                           ) : (
                             <div className="flex flex-col items-center justify-center h-full p-6">
-                              <Trophy className="h-12 w-12 text-gray-600 mb-2" />
-                              <p className="text-gray-400 text-center">
+                              <Trophy className="h-12 w-12 text-muted-foreground mb-2" />
+                              <p className="text-muted-foreground text-center">
                                 You haven&apos;t made any predictions yet.
                                 <br />
                                 Start predicting to earn rewards!
@@ -1004,18 +970,16 @@ function DashBoard() {
 
                 {/* Trending Matches - Desktop Only */}
                 <div className="hidden lg:block mt-6">
-                  <h2 className="text-xl font-bold mb-4 text-white">
-                    Trending Matches
-                  </h2>
+                  <h2 className="text-xl font-bold mb-4">Trending Matches</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {!isLoading &&
                       matches.map((match, idx) => (
                         <Card
                           key={idx}
-                          className="overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-md bg-gray-900"
+                          className="overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-md"
                         >
                           <CardHeader className="bg-primary/5 pb-2">
-                            <CardTitle className="text-base flex items-center justify-between text-white">
+                            <CardTitle className="text-base flex items-center justify-between">
                               <span>
                                 {match.teamA} vs {match.teamB}
                               </span>
@@ -1023,177 +987,358 @@ function DashBoard() {
                                 {getTimeRemaining(match.matchDate)}
                               </Badge>
                             </CardTitle>
+                            <CardDescription className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {formatDate(match.matchDate)}
+                            </CardDescription>
                           </CardHeader>
-                          <CardContent>
-                            {/* Add content here if needed */}
+                          <CardContent className="p-4">
+                            <div className="text-sm text-muted-foreground mb-2">
+                              {questions?.length > 0} prediction questions
+                              available
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex -space-x-2">
+                                      <Avatar className="border-2 border-background h-8 w-8">
+                                        <AvatarFallback className="bg-primary/20 text-xs">
+                                          {match.teamA.slice(0, 2)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <Avatar className="border-2 border-background h-8 w-8">
+                                        <AvatarFallback className="bg-primary/20 text-xs">
+                                          {match.teamB.slice(0, 2)}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>
+                                      {match.teamA} vs {match.teamB}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                              <div className="text-sm">
+                                <span className="text-primary font-medium">
+                                  250+
+                                </span>{" "}
+                                users predicting
+                              </div>
+                            </div>
                           </CardContent>
+                          <CardFooter className="bg-muted/20 p-3">
+                            <Button
+                              variant="ghost"
+                              className="w-full"
+                              onClick={() => setSelectedMatch(match)}
+                            >
+                              View Details
+                            </Button>
+                          </CardFooter>
                         </Card>
                       ))}
                   </div>
                 </div>
+
+                {/* Leaderboard - Desktop Only */}
+                <div className="hidden lg:block mt-8">
+                  <h2 className="text-xl font-bold mb-4">Top Predictors</h2>
+                  <Card>
+                    <CardHeader className="bg-primary/5">
+                      <CardTitle>Weekly Leaderboard</CardTitle>
+                      <CardDescription>
+                        Top performers based on prediction accuracy
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <div className="divide-y">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between p-4"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 font-bold">
+                                {i}
+                              </div>
+                              <Avatar className="h-10 w-10 border-2 border-primary/20">
+                                <AvatarFallback>
+                                  {String.fromCharCode(64 + i)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <p className="font-medium">User{i}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {90 - i * 5}% accuracy
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant="outline"
+                                className="bg-primary/10"
+                              >
+                                <Flame className="h-3 w-3 mr-1 text-primary" />
+                                {10 - i} streak
+                              </Badge>
+                              <Badge>
+                                <Star className="h-3 w-3 mr-1" />
+                                {1000 - i * 100} CPT
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full">
-                <AlertTriangle className="h-10 w-10 text-gray-500 mb-4" />
-                <p className="text-gray-400 text-lg mb-2">
-                  Please connect your wallet to continue.
-                </p>
-                <ConnectButton />
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="flex flex-col items-center justify-center py-12"
+              >
+                <Card className="w-full max-w-md overflow-hidden border-primary/20">
+                  <CardHeader className="bg-primary/5 text-center">
+                    <motion.div
+                      initial={{ rotate: -10 }}
+                      animate={{ rotate: 10 }}
+                      transition={{
+                        repeat: Number.POSITIVE_INFINITY,
+                        repeatType: "reverse",
+                        duration: 1.5,
+                      }}
+                      className="mx-auto mb-4"
+                    >
+                      <Cricket className="h-12 w-12 text-primary" />
+                    </motion.div>
+                    <CardTitle className="text-2xl">
+                      Welcome to Cricket Prophet
+                    </CardTitle>
+                    <CardDescription>
+                      Connect your wallet to start making predictions on cricket
+                      matches and earn rewards.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5">
+                        <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <Trophy className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Make Predictions</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Predict outcomes of cricket matches
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5">
+                        <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <Coins className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Earn Rewards</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Win CPT tokens for correct predictions
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5">
+                        <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <BarChart3 className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium">Track Performance</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Monitor your prediction history and stats
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex justify-center p-6 bg-primary/5">
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <ConnectButton />
+                    </motion.div>
+                  </CardFooter>
+                </Card>
+              </motion.div>
             )}
           </main>
         </div>
       </div>
 
-      {/* Network Switcher Dialog */}
-      <Dialog open={showNetworkDialog} onOpenChange={setShowNetworkDialog}>
-        <DialogContent className="bg-gray-900 border border-gray-800 text-white">
-          <DialogHeader>
-            <DialogTitle>Wrong Network</DialogTitle>
-            <DialogDescription>
-              Please switch to the Sepolia test network to use this application.
+      {/* Match Detail Modal */}
+      <Dialog
+        open={!!selectedMatch}
+        onOpenChange={(open) => !open && setSelectedMatch(null)}
+      >
+        <DialogContent className="max-w-4xl overflow-hidden">
+          <DialogHeader className="bg-primary/5 p-4 rounded-t-lg">
+            <DialogTitle className="text-2xl flex items-center justify-center gap-4">
+              <img
+                src={selectedMatch ? getTeamLogo(selectedMatch.teamA) : ""}
+                alt={selectedMatch?.teamA}
+                className="h-8 w-8 rounded-full bg-primary/10"
+              />
+              <span>
+                {selectedMatch?.teamA} vs {selectedMatch?.teamB}
+              </span>
+              <img
+                src={selectedMatch ? getTeamLogo(selectedMatch.teamB) : ""}
+                alt={selectedMatch?.teamB}
+                className="h-8 w-8 rounded-full bg-primary/10"
+              />
+            </DialogTitle>
+            <DialogDescription className="text-center flex items-center justify-center gap-2">
+              <Calendar className="h-4 w-4" />
+              {selectedMatch && formatDate(selectedMatch.matchDate)}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setShowNetworkDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button type="button" onClick={handleSwitchToSepolia}>
-              Switch to Sepolia
+          <ScrollArea className="max-h-[60vh]">
+            <div className="space-y-4 p-6">
+              {selectedMatch &&
+                questions &&
+                questions.map((question) => (
+                  <Card
+                    key={question._id}
+                    className="overflow-hidden border-primary/20"
+                  >
+                    <CardHeader className="bg-primary/5">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-lg">
+                          {question.question}
+                        </CardTitle>
+                        <Badge variant="outline" className="ml-2">
+                          {getTimeRemaining(question.closedAt)}
+                        </Badge>
+                      </div>
+                      <CardDescription className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        Closes: {formatDate(question.closedAt)}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                        {question.options.map((option, index) => (
+                          <motion.div
+                            key={index}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() =>
+                              setSelectedOption({
+                                ...selectedOption,
+                                [question._id]: option,
+                              })
+                            }
+                            className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                              selectedOption[question._id] === option
+                                ? "border-primary bg-primary/10"
+                                : "border-muted hover:border-primary/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`h-4 w-4 rounded-full border ${
+                                  selectedOption[question._id] === option
+                                    ? "border-primary bg-primary"
+                                    : "border-muted-foreground"
+                                }`}
+                              >
+                                {selectedOption[question._id] === option && (
+                                  <div className="h-2 w-2 m-[3px] rounded-full bg-white" />
+                                )}
+                              </div>
+                              <span className="font-medium">{option}</span>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="bg-primary/5 p-4 flex justify-end">
+                      <Button
+                        onClick={() => handleBet(question._id)}
+                        disabled={!selectedOption[question._id] || isPlacingBet}
+                        className="relative overflow-hidden"
+                      >
+                        {isPlacingBet ? (
+                          <>
+                            <span className="opacity-0">Place Prediction</span>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Loader2 className="h-5 w-5 animate-spin" />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            Place Prediction
+                            <Sparkles className="ml-2 h-4 w-4" />
+                          </>
+                        )}
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+            </div>
+          </ScrollArea>
+          <DialogFooter className="bg-primary/5 p-4 rounded-b-lg">
+            <Button variant="outline" onClick={() => setSelectedMatch(null)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Match Details Modal */}
-      <Dialog
-        open={selectedMatch !== null}
-        onOpenChange={() => setSelectedMatch(null)}
-      >
-        <DialogContent className="bg-gray-900 border border-gray-800 text-white max-w-2xl">
+      {/* Network switch dialog */}
+      <Dialog open={showNetworkDialog} onOpenChange={setShowNetworkDialog}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              Match Details
-              <Flame className="h-4 w-4 text-orange-500" />
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Network Change Required
             </DialogTitle>
             <DialogDescription>
-              Make your predictions for this match
+              Cricket Prophet requires the Sepolia test network. Please switch
+              your network to continue.
             </DialogDescription>
           </DialogHeader>
-
-          <ScrollArea className="h-[400px]">
-            {selectedMatch && (
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={
-                        getTeamLogo(selectedMatch.teamA) || "/placeholder.svg"
-                      }
-                      alt={selectedMatch.teamA}
-                      className="h-auto max-h-16"
-                    />
-                    <span className="text-xl font-bold">
-                      {selectedMatch.teamA}
-                    </span>
-                  </div>
-                  <span className="text-xl font-bold">vs</span>
-                  <div className="flex items-center gap-4">
-                    <span className="text-xl font-bold">
-                      {selectedMatch.teamB}
-                    </span>
-                    <img
-                      src={
-                        getTeamLogo(selectedMatch.teamB) || "/placeholder.svg"
-                      }
-                      alt={selectedMatch.teamB}
-                      className="h-auto max-h-16"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-6 text-gray-400">
-                  <Calendar className="h-4 w-4" />
-                  <span>{formatDate(selectedMatch.matchDate)}</span>
-                  <Clock className="h-4 w-4 ml-2" />
-                  <span>{getTimeRemaining(selectedMatch.matchDate)}</span>
-                </div>
-
-                {isLoadingQuestions ? (
-                  <div className="p-4">
-                    <Skeleton className="h-48 w-full bg-gray-800" />
-                  </div>
-                ) : (
-                  matchQuestions.map((question) => (
-                    <Card
-                      key={question._id}
-                      className="mb-4 bg-gray-800 border border-gray-700"
-                    >
-                      <CardHeader>
-                        <CardTitle className="text-lg text-white">
-                          {question.question}
-                        </CardTitle>
-                        <CardDescription className="text-gray-400">
-                          Time remaining: {getTimeRemaining(question.closedAt)}
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid gap-2">
-                          {question.options.map((option) => (
-                            <Button
-                              key={option}
-                              variant="outline"
-                              className={`w-full justify-start ${
-                                selectedOption[question._id] === option
-                                  ? "bg-primary text-primary-foreground"
-                                  : ""
-                              }`}
-                              onClick={() =>
-                                setSelectedOption((prev) => ({
-                                  ...prev,
-                                  [question._id]: option,
-                                }))
-                              }
-                            >
-                              {option}
-                            </Button>
-                          ))}
-                        </div>
-                      </CardContent>
-                      <CardFooter>
-                        <Button
-                          className="w-full"
-                          onClick={() => handleBet(question._id)}
-                          disabled={loadingQuestions[question._id] || isPending}
-                        >
-                          {loadingQuestions[question._id] || isPending ? (
-                            <>
-                              Placing Bet...
-                              <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                            </>
-                          ) : (
-                            "Place Bet"
-                          )}
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  ))
-                )}
-              </div>
-            )}
-          </ScrollArea>
-
-          <DialogFooter>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="flex items-center gap-4 w-full">
+              <Badge
+                variant="outline"
+                className="text-muted-foreground flex-1 justify-center py-2"
+              >
+                Current:{" "}
+                {chains.find((c) => c.id === chain?.id)?.name ||
+                  "Unknown Network"}
+              </Badge>
+              <ArrowRight className="h-6 w-6 text-muted-foreground animate-pulse" />
+              <Badge className="flex-1 justify-center py-2 bg-primary">
+                Required: Sepolia
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground text-center">
+              Switching networks will allow you to interact with the Cricket
+              Prophet platform and place predictions.
+            </div>
+          </div>
+          <DialogFooter className="flex justify-center sm:justify-center gap-2">
             <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setSelectedMatch(null)}
+              onClick={handleSwitchToSepolia}
+              className="w-full sm:w-auto"
             >
-              Close
+              Switch to Sepolia
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           </DialogFooter>
         </DialogContent>
