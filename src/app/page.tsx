@@ -77,6 +77,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+// 1. Add Sonner import at the top with other imports
+import { Toaster, toast } from "sonner";
+
 // Create a client
 const queryClient = new QueryClient();
 
@@ -145,11 +148,15 @@ function DashBoard() {
   const [selectedOption, setSelectedOption] = useState<{
     [key: string]: string;
   }>({});
-  const [isPlacingBet, setIsPlacingBet] = useState(false);
+  // 3. Update the isPlacingBet state to be an object instead of boolean
+  const [isPlacingBet, setIsPlacingBet] = useState<{ [key: string]: boolean }>(
+    {}
+  );
+  // 4. Add a loading state for questions
+  const [isQuestionLoading, setIsQuestionLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("upcoming");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [isQuestionLoading, setIsQuestionLoading] = useState(false);
 
   // Mock predictions data
   const [predictions, setPredictions] = useState<Prediction[]>([
@@ -258,16 +265,20 @@ function DashBoard() {
     return `${minutes}m remaining`;
   };
 
+  // 2. Update the handleBet function to track loading state per question
   const handleBet = async (questionId: string) => {
     if (!address) {
+      toast.error("Please connect your wallet first");
       return;
     }
 
     if (!selectedOption[questionId]) {
+      toast.error("Please select an option first");
       return;
     }
 
-    setIsPlacingBet(true);
+    // Track loading state for this specific question
+    setIsPlacingBet((prev) => ({ ...prev, [questionId]: true }));
 
     try {
       await writeContractAsync({
@@ -315,10 +326,13 @@ function DashBoard() {
         ...prev,
         [questionId]: "",
       }));
+
+      toast.success("Prediction placed successfully!");
     } catch (error) {
       console.error("Error placing bet:", error);
+      toast.error("Failed to place prediction. Please try again.");
     } finally {
-      setIsPlacingBet(false);
+      setIsPlacingBet((prev) => ({ ...prev, [questionId]: false }));
     }
   };
 
@@ -385,43 +399,38 @@ function DashBoard() {
     }
   };
 
+  // 5. Update the useEffect for fetching questions to use the loading state
   useEffect(() => {
-    async function f() {
+    async function fetchQuestions() {
       if (selectedMatch) {
-        const res = await fetch(`/api/layout/questions/${selectedMatch._id}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setQuestions([
+        setIsQuestionLoading(true);
+        try {
+          const res = await fetch(
+            `/api/layout/questions?id=${selectedMatch._id}`,
             {
-              _id: "1",
-              question: "Which team will win the toss?",
-              options: ["India", "Australia"],
-              isActive: true,
-              closedAt: new Date(Date.now() + 86400000 * 2).toISOString(),
-            },
-            {
-              _id: "2",
-              question: "Total sixes in the match?",
-              options: ["Less than 10", "More than 10"],
-              isActive: true,
-              closedAt: new Date(Date.now() + 86400000 * 2).toISOString(),
-            },
-          ]);
-          return;
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          const data = await res.json();
+          if(!res.ok) {
+            toast.error(data.message);
+            return;
+          }
+          setQuestions(data.questions);
+        } catch (error) {
+          console.error("Error fetching questions:", error);
+          toast.error("Failed to load match questions");
+        } finally {
+          setIsQuestionLoading(false);
         }
-        console.log(data);
-
-        setQuestions(data.questions);
       } else {
         setQuestions([]);
       }
     }
-    f();
+    fetchQuestions();
   }, [selectedMatch]);
 
   // Sidebar navigation items
@@ -1208,8 +1217,14 @@ function DashBoard() {
           </DialogHeader>
           <ScrollArea className="max-h-[60vh]">
             <div className="space-y-4 p-6">
-              {selectedMatch &&
-                questions &&
+              {/* 8. Add a loading state for the questions in the match detail modal */}
+              {isQuestionLoading ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-32 w-full rounded-lg" />
+                  <Skeleton className="h-32 w-full rounded-lg" />
+                  <Skeleton className="h-32 w-full rounded-lg" />
+                </div>
+              ) : selectedMatch && questions && questions.length > 0 ? (
                 questions.map((question) => (
                   <Card
                     key={question._id}
@@ -1266,13 +1281,17 @@ function DashBoard() {
                         ))}
                       </div>
                     </CardContent>
+                    {/* 7. Update the CardFooter in the match detail modal to use per-question loading state */}
                     <CardFooter className="bg-primary/5 p-4 flex justify-end">
                       <Button
                         onClick={() => handleBet(question._id)}
-                        disabled={!selectedOption[question._id] || isPlacingBet}
+                        disabled={
+                          !selectedOption[question._id] ||
+                          isPlacingBet[question._id]
+                        }
                         className="relative overflow-hidden"
                       >
-                        {isPlacingBet ? (
+                        {isPlacingBet[question._id] ? (
                           <>
                             <span className="opacity-0">Place Prediction</span>
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -1288,7 +1307,15 @@ function DashBoard() {
                       </Button>
                     </CardFooter>
                   </Card>
-                ))}
+                ))
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-center text-muted-foreground">
+                    No prediction questions available for this match yet.
+                  </p>
+                </div>
+              )}
             </div>
           </ScrollArea>
           <DialogFooter className="bg-primary/5 p-4 rounded-b-lg">
@@ -1343,6 +1370,28 @@ function DashBoard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* 9. Add a modal overlay to prevent interactions during submission */}
+      {Object.values(isPlacingBet).some(Boolean) && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <Card className="w-[300px]">
+            <CardHeader>
+              <CardTitle className="text-center">
+                Processing Prediction
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <p className="text-center text-muted-foreground">
+                Please wait while we process your prediction...
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* 10. Add the Sonner Toaster component at the end of the return statement, just before the closing div */}
+      <Toaster position="top-right" richColors />
     </div>
   );
 }

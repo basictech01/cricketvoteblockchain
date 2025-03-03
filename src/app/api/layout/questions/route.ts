@@ -1,12 +1,14 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
 import Question from "@/lib/model/Question";
 import Match from "@/lib/model/Match";
 
-export async function GET({ params }: { params: { id: string } }) {
+export async function GET(req:NextRequest) {
   try {
-    const { id } = params;
-    console.log("id is ", id);
+
+    const {searchParams} = new URL(req.url);
+    const id = searchParams.get("id");
+
     await connectDB();
 
     if (!id) {
@@ -22,6 +24,8 @@ export async function GET({ params }: { params: { id: string } }) {
     }
 
     const questions = await Question.find({ matchId: id });
+
+    console.log(questions)
 
     return NextResponse.json({ questions }, { status: 200 });
   } catch (error) {
