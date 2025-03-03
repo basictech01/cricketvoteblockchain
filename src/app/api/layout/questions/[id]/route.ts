@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const id = params;
+    const {id }= params;
     console.log("id is ", id);
     await connectDB();
 
@@ -27,7 +27,7 @@ export async function GET(
 
     const questions = await Question.find({ matchId: id });
 
-    return NextResponse.json({}, { status: 200 });
+    return NextResponse.json({questions}, { status: 200 });
   } catch (error) {
     console.error("Error fetching questions:", error);
     return NextResponse.json(
