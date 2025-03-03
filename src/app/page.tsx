@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { useState, useEffect } from "react";
 import {
@@ -273,10 +273,8 @@ function DashBoard() {
   const handleSwitchToSepolia = async () => {
     try {
       switchChain({ chainId: sepolia.id });
-     
     } catch (error) {
       console.error("Failed to switch network:", error);
-     
     }
   };
 
@@ -315,12 +313,10 @@ function DashBoard() {
 
   const handleBet = async (questionId: string) => {
     if (!address) {
-      
       return;
     }
 
     if (!selectedOption[questionId]) {
-     
       return;
     }
 
@@ -371,8 +367,6 @@ function DashBoard() {
         }
       }
 
-      
-
       // Reset selected option for this question
       setSelectedOption((prev) => ({
         ...prev,
@@ -380,7 +374,6 @@ function DashBoard() {
       }));
     } catch (error) {
       console.error("Error placing bet:", error);
-     
     } finally {
       setIsPlacingBet(false);
     }
@@ -419,12 +412,6 @@ function DashBoard() {
           .toUpperCase()}`
       );
     };
-
-    // Usage example:
-    console.log(getTeamLogo("Mumbai Indians")); // Should return the Mumbai Indians logo URL
-
-    console.log(teamName);
-
     return (
       teamLogos[teamName] ||
       `/placeholder.svg?height=40&width=40&text=${teamName
@@ -804,16 +791,16 @@ function DashBoard() {
                                   <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-4">
                                       <img
-                                      src={
-                                        getTeamLogo(
-                                        matches[currentMatchIndex].teamA
-                                        ) || "/placeholder.svg"
-                                      }
-                                      alt={matches[currentMatchIndex].teamA}
-                                      className="h-auto max-h-3"
+                                        src={
+                                          getTeamLogo(
+                                            matches[currentMatchIndex].teamA
+                                          ) || "/placeholder.svg"
+                                        }
+                                        alt={matches[currentMatchIndex].teamA}
+                                        className="h-auto max-h-20"
                                       />
                                       <span className="text-xl font-bold">
-                                      {matches[currentMatchIndex].teamA}
+                                        {matches[currentMatchIndex].teamA}
                                       </span>
                                     </div>
                                     <span className="text-xl font-bold">
@@ -830,7 +817,7 @@ function DashBoard() {
                                           ) || "/placeholder.svg"
                                         }
                                         alt={matches[currentMatchIndex].teamB}
-                                        className="h-auto max-h-3"
+                                        className="h-auto max-h-20"
                                       />
                                     </div>
                                   </div>
