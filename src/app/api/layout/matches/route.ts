@@ -11,7 +11,7 @@ export async function GET() {
 
     return NextResponse.json({ matches }, { status: 200 });
   } catch (error) {
-    console.error("Error fetching matches and questions:", error);
+    console.error("Error fetching matches:", error);
     return NextResponse.json(
       { message: "Internal server error" },
       { status: 500 }
