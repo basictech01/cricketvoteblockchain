@@ -203,7 +203,6 @@ function DashBoard() {
       try {
         const response = await fetch("/api/layout/matches");
         const data = await response.json();
-        console.log(data.matches);
         setMatches(data.matches);
       } catch (error) {
         console.error("Error fetching matches:", error);
