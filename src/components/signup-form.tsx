@@ -8,6 +8,7 @@ import * as z from "zod"
 import { motion } from "framer-motion"
 import { User, Mail, Check, Coins, ArrowRight, UserCircle } from "lucide-react"
 import { toast } from "sonner"
+import abi from "@/abis/Vote.json"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -48,7 +49,7 @@ export default function SignupForm() {
   const [isRegistered, setIsRegistered] = useState(false)
   const [registeredUsername, setRegisteredUsername] = useState("")
   const [registeredName, setRegisteredName] = useState("")
-  const { isPending } = useWriteContract()
+  const { isPending, writeContractAsync } = useWriteContract()
   const [signupProgress, setSignupProgress] = useState(0)
 
   // Initialize form with default values
@@ -75,11 +76,11 @@ export default function SignupForm() {
   async function handleClaimTokens() {
     try {
       // Uncomment this when the contract is ready
-      // await writeContractAsync({
-      //   address: "0x66f8ECD191AF7F90bc4Fe82629d525e5AB9FDf4C",
-      //   abi: abi,
-      //   functionName: "claimInitialTokens",
-      // })
+      writeContractAsync({
+        address: "0x66f8ECD191AF7F90bc4Fe82629d525e5AB9FDf4C",
+        abi: abi,
+        functionName: "claimInitialTokens",
+      })
 
       toast.success("Successfully claimed 10 CPT tokens!")
       setTokensClaimed(true)
@@ -308,4 +309,3 @@ export default function SignupForm() {
     </>
   )
 }
-
