@@ -26,7 +26,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Coins, ArrowRight, AlertTriangle, Wallet, BarChart3, BirdIcon as Cricket, ChevronLeft, ChevronRight, Trophy, Calendar, Clock, Sparkles, Users, Zap, Bell, Menu, Flame, Star, Loader2 } from 'lucide-react';
+import { Coins, ArrowRight, AlertTriangle, Wallet, BarChart3, TrophyIcon as Cricket, ChevronLeft, ChevronRight, Trophy, Calendar, Clock, Sparkles, Users, Zap, Bell, Menu, Flame, Star, Loader2 } from 'lucide-react';
 import abi from "../abis/Vote.json";
 import {
   Dialog,
@@ -1372,7 +1372,7 @@ function DashBoard() {
         </div>
       )}
 
-      <Toaster position="top-right" richColors />
+      {/* <Toaster position="top-right" richColors /> */}
     </div>
   );
 }
