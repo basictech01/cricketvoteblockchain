@@ -1376,8 +1376,7 @@ function DashBoard() {
         </div>
       )}
 
-      {/* 10. Add the Sonner Toaster component at the end of the return statement, just before the closing div */}
-      <Toaster position="top-right" richColors />
+      {/* <Toaster position="top-right" richColors /> */}
     </div>
   );
 }
