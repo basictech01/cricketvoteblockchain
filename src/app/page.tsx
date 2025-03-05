@@ -26,27 +26,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Coins,
-  ArrowRight,
-  AlertTriangle,
-  Wallet,
-  BarChart3,
-  BirdIcon as Cricket,
-  ChevronLeft,
-  ChevronRight,
-  Trophy,
-  Calendar,
-  Clock,
-  Sparkles,
-  Users,
-  Zap,
-  Bell,
-  Menu,
-  Flame,
-  Star,
-  Loader2,
-} from "lucide-react";
+import { Coins, ArrowRight, AlertTriangle, Wallet, BarChart3, BirdIcon as Cricket, ChevronLeft, ChevronRight, Trophy, Calendar, Clock, Sparkles, Users, Zap, Bell, Menu, Flame, Star, Loader2 } from 'lucide-react';
 import abi from "../abis/Vote.json";
 import {
   Dialog,
@@ -79,6 +59,9 @@ import {
 
 // 1. Add Sonner import at the top with other imports
 import { Toaster, toast } from "sonner";
+
+// Import the DashboardSignupIntegration component at the top with other imports
+import DashboardSignupIntegration from "@/components/dashboard-signup-integration";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -508,13 +491,16 @@ function DashBoard() {
               {!isConnected ? (
                 <ConnectButton />
               ) : (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  Close Menu
-                </Button>
+                <>
+                  <DashboardSignupIntegration className="w-full mb-2" />
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Close Menu
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -629,6 +615,7 @@ function DashBoard() {
                 <div className="hidden md:flex items-center gap-2">
                   <ThemeToggle />
                 </div>
+                <DashboardSignupIntegration className="hidden md:flex" />
                 <ConnectButton />
               </div>
             </div>

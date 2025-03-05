@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
     let user = await User.findOne({ address });
 
     if (!user) {
-      await User.create({ address });
+      return NextResponse.json(
+        { message: "User not found" },
+        { status: 404 }
+      );
     }
 
     user = await User.findOne({

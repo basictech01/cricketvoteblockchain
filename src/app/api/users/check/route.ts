@@ -4,18 +4,16 @@ import { connectDB } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
 
-    const { name, address, email } = await request.json();
+    const { address } = await request.json();
 
     await connectDB();
 
     const user = await User.findOne({ address });
 
     if(user){
-        return NextResponse.json({ message: 'User already exists' }, { status: 400 });
+        return NextResponse.json({ message: 'User found' }, { status: 200 });
     }
 
-    await User.create({ name, address, email });
-
-    return NextResponse.json({ message: 'User created successfully' }, { status: 201 });
+    return NextResponse.json({ message: 'User not found' }, { status: 404 });
 }
 
