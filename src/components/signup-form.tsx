@@ -117,8 +117,11 @@ export default function SignupForm() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to create account")
+        const errorData = await response.json();
+        console.log(errorData);
+        toast.error(errorData.message || "Failed to create account")
+        setSignupProgress(50)
+        return
       }
 
       // Show success message

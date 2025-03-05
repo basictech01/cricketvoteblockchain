@@ -1372,7 +1372,7 @@ function DashBoard() {
         </div>
       )}
 
-      {/* <Toaster position="top-right" richColors /> */}
+      <Toaster position="top-right" richColors />
     </div>
   );
 }
