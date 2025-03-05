@@ -1,5 +1,5 @@
 import mongoose from "mongoose"
-import Question from "./Question"
+import Question from "../src/lib/model/Question"
 
 // Mock mongoose
 jest.mock("mongoose", () => {

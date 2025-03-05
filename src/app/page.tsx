@@ -585,7 +585,6 @@ function DashBoard() {
 
           <div className="p-4 border-t mt-auto">
             <div className="flex items-center justify-between">
-              <ThemeToggle />
               {!isConnected && <ConnectButton />}
             </div>
           </div>
@@ -612,9 +611,6 @@ function DashBoard() {
                 <h2 className="text-xl font-bold">Dashboard</h2>
               </div>
               <div className="flex items-center gap-4">
-                <div className="hidden md:flex items-center gap-2">
-                  <ThemeToggle />
-                </div>
                 <DashboardSignupIntegration className="hidden md:flex" />
                 <ConnectButton />
               </div>

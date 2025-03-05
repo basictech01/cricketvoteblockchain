@@ -4,7 +4,7 @@ import { connectDB } from '@/lib/db';
 
 export async function POST(request: NextRequest) {
 
-    const { name, address, email } = await request.json();
+    const { name, address, email, username } = await request.json();
 
     await connectDB();
 
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ message: 'User already exists' }, { status: 400 });
     }
 
-    await User.create({ name, address, email });
+    await User.create({ name, address, email, username });
 
     return NextResponse.json({ message: 'User created successfully' }, { status: 201 });
 }
