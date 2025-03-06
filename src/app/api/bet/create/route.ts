@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     const existBet = await Bet.find({question:question._id,user:user._id});
 
-    if(existBet && existBet.length==1)
+    if(existBet && existBet.length>=1)
     {
       return NextResponse.json(
         { message: "Already bet" },
