@@ -1165,7 +1165,7 @@ function DashBoard() {
           <DialogHeader className="bg-primary/5 p-4 rounded-t-lg">
             <DialogTitle className="text-2xl flex items-center justify-center gap-4">
               <img
-                src={selectedMatch ? getTeamLogo(selectedMatch.teamA) : ""}
+                src={selectedMatch ? getTeamLogo(selectedMatch.teamA) : "/placeholder.svg"}
                 alt={selectedMatch?.teamA}
                 className="h-8 w-8 rounded-full bg-primary/10"
               />
@@ -1173,7 +1173,7 @@ function DashBoard() {
                 {selectedMatch?.teamA} vs {selectedMatch?.teamB}
               </span>
               <img
-                src={selectedMatch ? getTeamLogo(selectedMatch.teamB) : ""}
+                src={selectedMatch ? getTeamLogo(selectedMatch.teamB) : "/placeholder.svg"}
                 alt={selectedMatch?.teamB}
                 className="h-8 w-8 rounded-full bg-primary/10"
               />
