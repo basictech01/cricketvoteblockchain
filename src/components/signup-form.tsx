@@ -6,23 +6,15 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { motion, AnimatePresence } from "framer-motion"
-import { User, Mail, Check, Coins, ArrowRight, UserCircle, Loader2 } from "lucide-react"
+import { Clock, ArrowRight} from "lucide-react"
 import { toast } from "sonner"
 import abi from "@/abis/Vote.json"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
+import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 
 const signupFormSchema = z.object({
@@ -45,9 +37,6 @@ export default function SignupForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showClaimDialog, setShowClaimDialog] = useState(false)
   const [tokensClaimed, setTokensClaimed] = useState(false)
-  const [isRegistered, setIsRegistered] = useState(false)
-  const [registeredUsername, setRegisteredUsername] = useState("")
-  const [registeredName, setRegisteredName] = useState("")
   const { isPending, writeContractAsync } = useWriteContract()
   const [signupProgress, setSignupProgress] = useState(0)
 
@@ -82,6 +71,12 @@ export default function SignupForm() {
     }
   }
 
+  async function handleAlreadyClaimed() {
+    setTokensClaimed(true)
+    setShowClaimDialog(false)
+    setSignupProgress(50)
+  }
+
   async function onSubmit(data: SignupFormValues) {
     if (!tokensClaimed) {
       toast.error("Please claim your tokens before signing up")
@@ -99,186 +94,157 @@ export default function SignupForm() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to create account")
+        throw new Error("Failed to create account")
       }
 
       toast.success("Account created successfully!")
-      setIsRegistered(true)
-      setRegisteredUsername(data.username)
-      setRegisteredName(data.name)
       setSignupProgress(100)
       setTimeout(() => window.location.reload(), 3000)
     } catch (error) {
       console.error("Error creating account:", error)
-      toast.error(error instanceof Error ? error.message : "Failed to create account. Please try again.")
+      toast.error("Failed to create account. Please try again.")
       setSignupProgress(50)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const formatAddress = (address: string | undefined) =>
-    address ? `${address.slice(0, 6)}...${address.slice(-4)}` : ""
-
   return (
     <>
-      <Card className="w-full max-w-md overflow-hidden border-primary/20 shadow-lg">
-        <CardHeader className="bg-primary/5 p-6 sm:p-8">
-          <CardTitle className="text-2xl sm:text-3xl text-center mb-2">Create Your Account</CardTitle>
-          <CardDescription className="text-center text-sm sm:text-base">
-            Claim your tokens and sign up to start making predictions
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6">
-          <Progress value={signupProgress} className="mb-6" />
+      <Card className="w-full max-w-md bg-black border-gray-800">
+        <div className="p-6 space-y-6">
+          <div className="space-y-2 text-center">
+            <h1 className="text-2xl font-semibold text-white">Create Your Account</h1>
+            <p className="text-gray-400">Claim your tokens and sign up to start making predictions</p>
+          </div>
+
+          <Progress value={signupProgress} className="bg-green-950 [&>div]:bg-[#00FF66]" />
+
           <AnimatePresence mode="wait">
-            {!isRegistered ? (
-              !tokensClaimed ? (
-                <motion.div
-                  key="claim"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
+            {!tokensClaimed ? (
+              <motion.div
+                key="start"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Button
+                  onClick={handleInitialSignUp}
+                  className="w-full py-6 text-lg bg-[#00FF66] hover:bg-[#00DD66] text-black"
                 >
-                  <Button onClick={handleInitialSignUp} className="w-full py-6 text-lg">
-                    Start Sign Up Process
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Button>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="form"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                      {["name", "username", "email"].map((field) => (
-                        <FormField
-                          key={field}
-                          control={form.control}
-                          name={field as keyof SignupFormValues}
-                          render={({ field: fieldProps }) => (
-                            <FormItem>
-                              <FormLabel className="text-sm font-medium">
-                                {field.charAt(0).toUpperCase() + field.slice(1)}
-                              </FormLabel>
-                              <FormControl>
-                                <div className="relative">
-                                  {field === "name" && (
-                                    <UserCircle className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                                  )}
-                                  {field === "username" && (
-                                    <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                                  )}
-                                  {field === "email" && (
-                                    <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                                  )}
-                                  <Input
-                                    className="pl-10 py-5 text-base"
-                                    placeholder={field === "email" ? "john@example.com" : `Enter your ${field}`}
-                                    {...fieldProps}
-                                  />
-                                </div>
-                              </FormControl>
-                              <FormMessage className="text-xs" />
-                            </FormItem>
-                          )}
-                        />
-                      ))}
-                      <Button
-                        type="submit"
-                        className="w-full py-6 text-lg relative overflow-hidden"
-                        disabled={isSubmitting}
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <span className="opacity-0">Create Account</span>
-                            <Loader2 className="h-6 w-6 animate-spin absolute inset-0 m-auto" />
-                          </>
-                        ) : (
-                          "Create Account"
-                        )}
-                      </Button>
-                    </form>
-                  </Form>
-                </motion.div>
-              )
+                  Start Sign Up Process
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </motion.div>
             ) : (
               <motion.div
-                key="success"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="space-y-6 text-center"
+                key="form"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
               >
-                <Check className="h-16 w-16 text-green-500 mx-auto" />
-                <h3 className="text-2xl font-semibold">Registration Successful!</h3>
-                <p className="text-lg">
-                  Welcome, <span className="font-semibold">{registeredName}</span>!
-                </p>
-                <p className="text-sm text-muted-foreground">Your account has been created successfully.</p>
-                <div className="flex flex-col items-center space-y-3">
-                  {[
-                    { label: "Name", value: registeredName },
-                    { label: "Username", value: registeredUsername },
-                    { label: "Wallet", value: formatAddress(address) },
-                  ].map(({ label, value }) => (
-                    <Badge key={label} variant="outline" className="text-sm py-2 px-3">
-                      {label}: {value}
-                    </Badge>
-                  ))}
-                </div>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    {["name", "username", "email"].map((field) => (
+                      <FormField
+                        key={field}
+                        control={form.control}
+                        name={field as keyof SignupFormValues}
+                        render={({ field: fieldProps }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm text-gray-300">
+                              {field.charAt(0).toUpperCase() + field.slice(1)}
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                className="bg-gray-900 border-gray-800 text-white"
+                                placeholder={`Enter your ${field}`}
+                                {...fieldProps}
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-6 text-lg bg-[#00FF66] hover:bg-[#00DD66] text-black"
+                    >
+                      {isSubmitting ? (
+                        <motion.div
+                          animate={{ opacity: [1, 0.5, 1] }}
+                          transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
+                        >
+                          Creating Account...
+                        </motion.div>
+                      ) : (
+                        "Create Account"
+                      )}
+                    </Button>
+                  </form>
+                </Form>
               </motion.div>
             )}
           </AnimatePresence>
-        </CardContent>
-        {tokensClaimed && !isRegistered && (
-          <CardFooter className="bg-primary/5 p-4">
-            <div className="flex items-center justify-center w-full text-sm text-muted-foreground">
-              <Check className="mr-2 h-4 w-4 text-green-500" />
-              10 CPT tokens claimed successfully
-            </div>
-          </CardFooter>
-        )}
+        </div>
       </Card>
 
       <Dialog open={showClaimDialog} onOpenChange={setShowClaimDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-xl sm:text-2xl mb-2">Claim Your Welcome Bonus</DialogTitle>
-            <DialogDescription className="text-sm sm:text-base">
-              Before signing up, you need to claim your 10 CPT tokens. This is a required step to create your account.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-center justify-center py-6">
-            <div className="rounded-full bg-primary/10 p-4">
-              <Coins className="h-12 w-12 text-primary" />
+        <DialogContent className="bg-black border-gray-800 p-6 sm:max-w-md">
+
+          <div className="space-y-3">
+            <h2 className="text-2xl font-semibold text-white">Claim Your Welcome Bonus</h2>
+            <p className="text-gray-400">
+              Is this your first time claiming tokens? You&apos;ll receive 10 CPT tokens as a welcome bonus.
+            </p>
+          </div>
+
+          <div className="flex justify-center my-12">
+            <div className="rounded-full bg-green-900/30 p-8">
+              <Clock className="h-12 w-12 text-[#00FF66]" />
             </div>
           </div>
-          <DialogFooter className="sm:justify-center">
-            <Button onClick={handleClaimTokens} disabled={isPending} className="w-full sm:w-auto py-6 text-lg">
+
+          <div className="bg-[#2A1800] rounded-lg p-4 mb-6">
+            <p className="text-amber-500">
+              Warning: If you don&apos;t claim your tokens now, you won&apos;t be able to claim them later.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={handleClaimTokens}
+              disabled={isPending}
+              className="flex-1 py-3 bg-[#00FF66] hover:bg-[#00DD66] text-black font-medium"
+            >
               {isPending ? (
                 <motion.div
                   className="flex items-center justify-center gap-2"
                   animate={{ opacity: [1, 0.5, 1] }}
-                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY }}
                 >
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Claiming...
+                  <Clock className="h-5 w-5 animate-spin" />
+                  <span>Claiming...</span>
                 </motion.div>
               ) : (
-                <>
-                  <Coins className="mr-2 h-5 w-5" />
-                  Claim 10 CPT Tokens
-                </>
+                <div className="flex items-center justify-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  <span>Claim 10 CPT Tokens</span>
+                </div>
               )}
             </Button>
-          </DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleAlreadyClaimed}
+              className="flex-1 py-3 border-gray-800 bg-transparent text-white hover:bg-gray-900"
+            >
+              Already Claimed Tokens
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

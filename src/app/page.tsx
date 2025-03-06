@@ -6,8 +6,8 @@ import { WagmiProvider, createConfig, http, useReadContract, useWriteContract, u
 import { coinbaseWallet, walletConnect } from "wagmi/connectors"
 import { sepolia, mainnet, polygon } from "wagmi/chains"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import Web3AuthConnectorInstance from "@/app/Web3AuthConnectorInstance"
-import { ConnectButton } from "@/app/ConnectButton"
+import Web3AuthConnectorInstance from "./Web3AuthConnectorInstance"
+import { ConnectButton } from "./ConnectButton"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -144,6 +144,8 @@ function DashBoard() {
   const [userBets, setUserBets] = useState<Bet[]>([])
   const [isLoadingBets, setIsLoadingBets] = useState(false)
   const [winRate, setWinRate] = useState(0)
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false)
+  const [pendingQuestionId, setPendingQuestionId] = useState<string | null>(null)
 
   const { data: tokenBalance, isLoading: isBalanceLoading } = useReadContract({
     abi,
@@ -212,8 +214,6 @@ function DashBoard() {
               questionId: bet.question?._id,
             }
           })
-
-          console.log(userPredictions)
 
           setPredictions(userPredictions)
 
@@ -286,6 +286,31 @@ function DashBoard() {
     }
   }
 
+  // User verification
+  const verifyUser = async (address: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`/api/users/check`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ address }),
+      })
+      const data = await response.json()
+      console.log(data)
+
+      if (response.ok) {
+        return true
+      }
+
+      return false
+    } catch (error) {
+      console.error("Error verifying user:", error)
+      toast.error("Failed to verify user status")
+      return false
+    }
+  }
+
   // Handle bet placement
   const handleBet = async (questionId: string) => {
     if (!address) {
@@ -298,6 +323,28 @@ function DashBoard() {
       return
     }
 
+    // Set pending question ID for verification flow
+    setPendingQuestionId(questionId)
+
+    // Start verification process
+    try {
+      const isVerified = await verifyUser(address)
+
+      if (!isVerified) {
+        setShowVerificationDialog(true)
+        return
+      }
+
+      // If verified, proceed with placing bet
+      await placeBet(questionId)
+    } catch (error) {
+      console.error("Error during verification:", error)
+      toast.error("Verification failed. Please try again.")
+    }
+  }
+
+  // Actual bet placement logic
+  const placeBet = async (questionId: string) => {
     // Track loading state for this specific question
     setIsPlacingBet((prev) => ({ ...prev, [questionId]: true }))
 
@@ -348,7 +395,7 @@ function DashBoard() {
       // Reset selected option for this question
       setSelectedOption((prev) => ({
         ...prev,
-        [questionId]: "",
+        [questionId]: selectedOption[questionId], // Keep the selection to show user's choice
       }))
 
       toast.success("Prediction placed successfully!")
@@ -357,6 +404,19 @@ function DashBoard() {
       toast.error("Failed to place prediction. Please try again.")
     } finally {
       setIsPlacingBet((prev) => ({ ...prev, [questionId]: false }))
+      setPendingQuestionId(null)
+    }
+  }
+
+  // Handle verification completion
+  const handleVerificationComplete = async (success: boolean) => {
+    setShowVerificationDialog(false)
+
+    if (success && pendingQuestionId) {
+      await placeBet(pendingQuestionId)
+    } else {
+      setPendingQuestionId(null)
+      toast.error("Please complete the sign-up process before making predictions.")
     }
   }
 
@@ -1148,42 +1208,61 @@ function DashBoard() {
                     </CardHeader>
                     <CardContent className="p-4">
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {question.options.map((option, index) => (
-                          <motion.div
-                            key={index}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => {
-                              // Only allow selection if question is still active
-                              if (question.isActive) {
-                                setSelectedOption({
-                                  ...selectedOption,
-                                  [question._id]: option,
-                                })
-                              }
-                            }}
-                            className={`p-3 rounded-lg border-2 ${question.isActive ? "cursor-pointer" : "cursor-not-allowed opacity-70"} transition-all ${
-                              selectedOption[question._id] === option
-                                ? "border-primary bg-primary/10"
-                                : "border-muted hover:border-primary/50"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`h-4 w-4 rounded-full border ${
-                                  selectedOption[question._id] === option
-                                    ? "border-primary bg-primary"
-                                    : "border-muted-foreground"
-                                }`}
-                              >
-                                {selectedOption[question._id] === option && (
-                                  <div className="h-2 w-2 m-[3px] rounded-full bg-white" />
+                        {question.options.map((option, index) => {
+                          // Check if this is the user's previous selection
+                          const isUserPreviousSelection = userBets.some(
+                            (bet) => bet.question._id === question._id && bet.option === option,
+                          )
+
+                          return (
+                            <motion.div
+                              key={index}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              onClick={() => {
+                                // Only allow selection if question is still active
+                                if (question.isActive) {
+                                  setSelectedOption({
+                                    ...selectedOption,
+                                    [question._id]: option,
+                                  })
+                                }
+                              }}
+                              className={`p-3 rounded-lg border-2 ${question.isActive ? "cursor-pointer" : "cursor-not-allowed opacity-70"} transition-all ${
+                                selectedOption[question._id] === option
+                                  ? "border-primary bg-primary/10"
+                                  : isUserPreviousSelection
+                                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                    : "border-muted hover:border-primary/50"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`h-4 w-4 rounded-full border ${
+                                    selectedOption[question._id] === option
+                                      ? "border-primary bg-primary"
+                                      : isUserPreviousSelection
+                                        ? "border-green-500 bg-green-500"
+                                        : "border-muted-foreground"
+                                  }`}
+                                >
+                                  {(selectedOption[question._id] === option || isUserPreviousSelection) && (
+                                    <div className="h-2 w-2 m-[3px] rounded-full bg-white" />
+                                  )}
+                                </div>
+                                <span className="font-medium">{option}</span>
+                                {isUserPreviousSelection && (
+                                  <Badge
+                                    variant="outline"
+                                    className="ml-auto text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+                                  >
+                                    Your Pick
+                                  </Badge>
                                 )}
                               </div>
-                              <span className="font-medium">{option}</span>
-                            </div>
-                          </motion.div>
-                        ))}
+                            </motion.div>
+                          )
+                        })}
                       </div>
                       {/* Show if question has an answer already */}
                       {question.answer && (
@@ -1196,35 +1275,45 @@ function DashBoard() {
                       )}
                     </CardContent>
                     <CardFooter className="bg-primary/5 p-4 flex justify-end">
-                      <Button
-                        onClick={() => handleBet(question._id)}
-                        disabled={
-                          !selectedOption[question._id] ||
-                          isPlacingBet[question._id] ||
-                          !question.isActive ||
-                          !!question.answer
-                        }
-                        className="relative overflow-hidden"
-                      >
-                        {isPlacingBet[question._id] ? (
-                          <>
-                            <span className="opacity-0">Place Prediction</span>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Loader2 className="h-5 w-5 animate-spin" />
-                            </div>
-                          </>
-                        ) : question.answer ? (
-                          <>
-                            Prediction Closed
-                            <AlertTriangle className="ml-2 h-4 w-4" />
-                          </>
-                        ) : (
-                          <>
-                            Place Prediction
-                            <Sparkles className="ml-2 h-4 w-4" />
-                          </>
-                        )}
-                      </Button>
+                      {userBets.some((bet) => bet.question._id === question._id) ? (
+                        <Button
+                          variant="outline"
+                          className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
+                          disabled
+                        >
+                          Prediction Submitted
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleBet(question._id)}
+                          disabled={
+                            !selectedOption[question._id] ||
+                            isPlacingBet[question._id] ||
+                            !question.isActive ||
+                            !!question.answer
+                          }
+                          className="relative overflow-hidden"
+                        >
+                          {isPlacingBet[question._id] ? (
+                            <>
+                              <span className="opacity-0">Place Prediction</span>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                              </div>
+                            </>
+                          ) : question.answer ? (
+                            <>
+                              Prediction Closed
+                              <AlertTriangle className="ml-2 h-4 w-4" />
+                            </>
+                          ) : (
+                            <>
+                              Place Prediction
+                              <Sparkles className="ml-2 h-4 w-4" />
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </CardFooter>
                   </Card>
                 ))
@@ -1279,8 +1368,41 @@ function DashBoard() {
         </DialogContent>
       </Dialog>
 
+      {/* Verification Dialog */}
+      <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Account Verification Required
+            </DialogTitle>
+            <DialogDescription>You need to complete the sign-up process before making predictions.</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <Card className="p-4 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200 border border-amber-200 dark:border-amber-800 rounded-lg w-full">
+              <p className="text-sm">
+                To ensure fair play and prevent abuse, we require all users to complete a simple verification process
+                before making predictions.
+              </p>
+            </Card>
+          </div>
+          <DialogFooter className="flex justify-between sm:justify-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowVerificationDialog(false)
+                handleVerificationComplete(false)
+              }}
+            >
+              Cancel
+            </Button>
+            <DashboardSignupIntegration className="w-full" />
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal overlay during submission */}
-      {Object.values(isPlacingBet).some(Boolean) && (
+      {(Object.values(isPlacingBet).some(Boolean) || isPending) && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
           <Card className="w-[300px]">
             <CardHeader>
