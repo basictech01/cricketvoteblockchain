@@ -31,7 +31,6 @@ import {
   Users,
   Trophy,
   Sparkles,
-  Activity,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
@@ -54,7 +53,6 @@ import { Switch } from "@/components/ui/switch"
 import { motion, AnimatePresence } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Progress } from "@/components/ui/progress"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 interface Match {
   _id: string
@@ -84,14 +82,6 @@ interface AdminStats {
   avgPredictionsPerUser: string
 }
 
-interface RecentActivity {
-  id: string
-  user: string
-  question: string
-  option: string
-  timestamp: string
-}
-
 export default function AdminDashboard() {
   const [matches, setMatches] = useState<Match[]>([])
   const [questions, setQuestions] = useState<Question[]>([])
@@ -113,7 +103,6 @@ export default function AdminDashboard() {
     totalPredictions: 0,
     avgPredictionsPerUser: "0",
   })
-  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
 
   // New question form state
   const [newQuestion, setNewQuestion] = useState({
@@ -145,7 +134,6 @@ export default function AdminDashboard() {
 
         const data = await response.json()
         setAdminStats(data.stats)
-        setRecentActivity(data.recentActivity)
       } catch (error) {
         console.error("Error fetching admin stats:", error)
         toast.error("Failed to load admin statistics")
@@ -450,7 +438,6 @@ export default function AdminDashboard() {
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
         setAdminStats(statsData.stats)
-        setRecentActivity(statsData.recentActivity)
       }
 
       toast.success("Data refreshed successfully")
@@ -497,16 +484,9 @@ export default function AdminDashboard() {
     setFilterStatus("all")
   }
 
-  // Get initials for avatar
-  const getInitials = (name: string) => {
-    if (!name) return "?"
-    if (name.length <= 2) return name.toUpperCase()
-    return name.substring(0, 2).toUpperCase()
-  }
-
   return (
-    <div className="py-6">
-      <Card className="border-primary/20 shadow-md">
+    <div className="py-0">
+      <Card className="border-primary/20 shadow-md" style={{ height: "100vh" }}>
         <CardHeader className="bg-primary/5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -682,94 +662,43 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Sidebar */}
             <div className="md:col-span-1">
-              <div className="space-y-6">
-                <Card className="shadow-sm">
-                  <CardHeader className="bg-primary/5 pb-2">
-                    <CardTitle className="text-lg">Matches</CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <ScrollArea className="h-[300px]">
-                      {isLoadingMatches ? (
-                        <div className="p-4 space-y-4">
-                          <Skeleton className="h-12 w-full" />
-                          <Skeleton className="h-12 w-full" />
-                          <Skeleton className="h-12 w-full" />
-                        </div>
-                      ) : (
-                        <div className="divide-y">
-                          {matches.map((match) => (
-                            <motion.div
-                              key={match._id}
-                              whileHover={{ backgroundColor: "rgba(var(--primary), 0.05)" }}
-                              className={`p-3 cursor-pointer transition-colors ${
-                                selectedMatch?._id === match._id ? "bg-primary/10" : ""
-                              }`}
-                              onClick={() => handleMatchSelect(match._id)}
-                            >
-                              <div className="font-medium">
-                                {match.teamA} vs {match.teamB}
-                              </div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                                <Calendar className="h-3 w-3" />
-                                {formatDate(match.matchDate)}
-                              </div>
-                            </motion.div>
-                          ))}
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-
-                {/* Recent Activity */}
-                <Card className="shadow-sm">
-                  <CardHeader className="bg-primary/5 pb-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Activity className="h-4 w-4" />
-                      Recent Activity
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-0">
-                    <ScrollArea className="h-[200px]">
-                      {isLoadingStats ? (
-                        <div className="p-4 space-y-4">
-                          <Skeleton className="h-12 w-full" />
-                          <Skeleton className="h-12 w-full" />
-                          <Skeleton className="h-12 w-full" />
-                        </div>
-                      ) : recentActivity.length > 0 ? (
-                        <div className="divide-y">
-                          {recentActivity.map((activity) => (
-                            <div key={activity.id} className="p-3">
-                              <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarFallback className="text-xs">{getInitials(activity.user)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <p className="text-xs font-medium">{activity.user}</p>
-                                  <p className="text-xs text-muted-foreground truncate max-w-[180px]">
-                                    {activity.question}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex justify-between items-center mt-1">
-                                <Badge variant="outline" className="text-xs">
-                                  {activity.option}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">{formatDate(activity.timestamp)}</span>
-                              </div>
+              <Card className="shadow-sm">
+                <CardHeader className="bg-primary/5 pb-2">
+                  <CardTitle className="text-lg">Matches</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <ScrollArea className="h-[480px]">
+                    {isLoadingMatches ? (
+                      <div className="p-4 space-y-4">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                      </div>
+                    ) : (
+                      <div className="divide-y">
+                        {matches.map((match) => (
+                          <motion.div
+                            key={match._id}
+                            whileHover={{ backgroundColor: "rgba(var(--primary), 0.05)" }}
+                            className={`p-3 cursor-pointer transition-colors ${
+                              selectedMatch?._id === match._id ? "bg-primary/10" : ""
+                            }`}
+                            onClick={() => handleMatchSelect(match._id)}
+                          >
+                            <div className="font-medium">
+                              {match.teamA} vs {match.teamB}
                             </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center h-full p-4">
-                          <p className="text-sm text-muted-foreground text-center">No recent activity to display</p>
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-              </div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                              <Calendar className="h-3 w-3" />
+                              {formatDate(match.matchDate)}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Main Content */}
@@ -840,7 +769,7 @@ export default function AdminDashboard() {
                       )}
                     </CardHeader>
                     <CardContent className="p-0">
-                      <ScrollArea className="h-[500px]">
+                      <ScrollArea className="h-[410px]">
                         {isLoadingQuestions ? (
                           <div className="p-4 space-y-4">
                             <Skeleton className="h-32 w-full" />
