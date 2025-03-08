@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
@@ -12,7 +11,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Calendar, Clock, Plus, Edit, Save, Trash2, AlertTriangle, Check, PlusCircle, Pencil } from "lucide-react"
+import {
+  Calendar,
+  Clock,
+  Plus,
+  Edit,
+  Save,
+  Trash2,
+  AlertTriangle,
+  Check,
+  PlusCircle,
+  Pencil,
+  Search,
+  Filter,
+  RefreshCw,
+  ChevronDown,
+  X,
+  BarChart4,
+  Users,
+  Trophy,
+  Sparkles,
+  Activity,
+} from "lucide-react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -22,8 +42,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch"
 import { motion, AnimatePresence } from "framer-motion"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Progress } from "@/components/ui/progress"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 interface Match {
   _id: string
@@ -42,13 +73,47 @@ interface Question {
   matchId: string
 }
 
+interface AdminStats {
+  totalQuestions: number
+  answeredQuestions: number
+  activeQuestions: number
+  totalMatches: number
+  upcomingMatches: number
+  totalUsers: number
+  totalPredictions: number
+  avgPredictionsPerUser: string
+}
+
+interface RecentActivity {
+  id: string
+  user: string
+  question: string
+  option: string
+  timestamp: string
+}
+
 export default function AdminDashboard() {
   const [matches, setMatches] = useState<Match[]>([])
   const [questions, setQuestions] = useState<Question[]>([])
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
   const [isLoadingMatches, setIsLoadingMatches] = useState(true)
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false)
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
   const [activeTab, setActiveTab] = useState("questions")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive" | "answered" | "unanswered">("all")
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [adminStats, setAdminStats] = useState<AdminStats>({
+    totalQuestions: 0,
+    answeredQuestions: 0,
+    activeQuestions: 0,
+    totalMatches: 0,
+    upcomingMatches: 0,
+    totalUsers: 0,
+    totalPredictions: 0,
+    avgPredictionsPerUser: "0",
+  })
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
 
   // New question form state
   const [newQuestion, setNewQuestion] = useState({
@@ -67,6 +132,30 @@ export default function AdminDashboard() {
   const [answerQuestion, setAnswerQuestion] = useState<Question | null>(null)
   const [selectedAnswer, setSelectedAnswer] = useState("")
   const [showAnswerDialog, setShowAnswerDialog] = useState(false)
+
+  // Fetch admin stats
+  useEffect(() => {
+    const fetchAdminStats = async () => {
+      setIsLoadingStats(true)
+      try {
+        const response = await fetch("/api/admin/stats")
+        if (!response.ok) {
+          throw new Error("Failed to fetch admin stats")
+        }
+
+        const data = await response.json()
+        setAdminStats(data.stats)
+        setRecentActivity(data.recentActivity)
+      } catch (error) {
+        console.error("Error fetching admin stats:", error)
+        toast.error("Failed to load admin statistics")
+      } finally {
+        setIsLoadingStats(false)
+      }
+    }
+
+    fetchAdminStats()
+  }, [])
 
   // Fetch matches
   useEffect(() => {
@@ -114,6 +203,38 @@ export default function AdminDashboard() {
 
     fetchQuestions()
   }, [selectedMatch])
+
+  // Filter questions based on search and filter
+  const filteredQuestions = useMemo(() => {
+    return questions.filter((question) => {
+      // Search filter
+      const matchesSearch =
+        searchQuery === "" ||
+        question.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        question.options.some((opt) => opt.toLowerCase().includes(searchQuery.toLowerCase()))
+
+      // Status filter
+      let matchesStatus = true
+      switch (filterStatus) {
+        case "active":
+          matchesStatus = question.isActive
+          break
+        case "inactive":
+          matchesStatus = !question.isActive
+          break
+        case "answered":
+          matchesStatus = !!question.answer
+          break
+        case "unanswered":
+          matchesStatus = !question.answer
+          break
+        default:
+          matchesStatus = true
+      }
+
+      return matchesSearch && matchesStatus
+    })
+  }, [questions, searchQuery, filterStatus])
 
   // Handle match selection
   const handleMatchSelect = (matchId: string) => {
@@ -196,6 +317,13 @@ export default function AdminDashboard() {
       // Add the new question to the list
       setQuestions((prev) => [...prev, data.question])
 
+      // Update stats
+      setAdminStats((prev) => ({
+        ...prev,
+        totalQuestions: prev.totalQuestions + 1,
+        activeQuestions: prev.activeQuestions + 1,
+      }))
+
       // Reset form
       setNewQuestion({
         question: "",
@@ -206,6 +334,9 @@ export default function AdminDashboard() {
       })
 
       toast.success("Question created successfully")
+
+      // Switch to questions tab to see the new question
+      setActiveTab("questions")
     } catch (error) {
       console.error("Error creating question:", error)
       toast.error("Failed to create question")
@@ -237,6 +368,15 @@ export default function AdminDashboard() {
 
       // Update the question in the list
       setQuestions((prev) => prev.map((q) => (q._id === editingQuestion._id ? editingQuestion : q)))
+
+      // Update stats if active status changed
+      const wasActive = questions.find((q) => q._id === editingQuestion._id)?.isActive
+      if (wasActive !== editingQuestion.isActive) {
+        setAdminStats((prev) => ({
+          ...prev,
+          activeQuestions: editingQuestion.isActive ? prev.activeQuestions + 1 : prev.activeQuestions - 1,
+        }))
+      }
 
       setShowEditDialog(false)
       toast.success("Question updated successfully")
@@ -270,14 +410,55 @@ export default function AdminDashboard() {
         throw new Error("Failed to set answer")
       }
 
+      // Check if this is a new answer or changing an existing one
+      const hadAnswerBefore = !!answerQuestion.answer
+
       // Update the question in the list
       setQuestions((prev) => prev.map((q) => (q._id === answerQuestion._id ? { ...q, answer: selectedAnswer } : q)))
+
+      // Update stats if this is a new answer
+      if (!hadAnswerBefore) {
+        setAdminStats((prev) => ({
+          ...prev,
+          answeredQuestions: prev.answeredQuestions + 1,
+        }))
+      }
 
       setShowAnswerDialog(false)
       toast.success("Answer set successfully")
     } catch (error) {
       console.error("Error setting answer:", error)
       toast.error("Failed to set answer")
+    }
+  }
+
+  // Refresh questions and stats
+  const refreshData = async () => {
+    if (!selectedMatch) return
+
+    setIsRefreshing(true)
+    try {
+      // Refresh questions
+      const questionsResponse = await fetch(`/api/layout/questions?id=${selectedMatch._id}`)
+      const questionsData = await questionsResponse.json()
+      if (questionsData.questions) {
+        setQuestions(questionsData.questions)
+      }
+
+      // Refresh stats
+      const statsResponse = await fetch("/api/admin/stats")
+      if (statsResponse.ok) {
+        const statsData = await statsResponse.json()
+        setAdminStats(statsData.stats)
+        setRecentActivity(statsData.recentActivity)
+      }
+
+      toast.success("Data refreshed successfully")
+    } catch (error) {
+      console.error("Error refreshing data:", error)
+      toast.error("Failed to refresh data")
+    } finally {
+      setIsRefreshing(false)
     }
   }
 
@@ -310,75 +491,353 @@ export default function AdminDashboard() {
     return `${minutes}m remaining`
   }
 
+  // Clear search and filters
+  const clearFilters = () => {
+    setSearchQuery("")
+    setFilterStatus("all")
+  }
+
+  // Get initials for avatar
+  const getInitials = (name: string) => {
+    if (!name) return "?"
+    if (name.length <= 2) return name.toUpperCase()
+    return name.substring(0, 2).toUpperCase()
+  }
+
   return (
     <div className="py-6">
-      <Card className="border-primary/20">
+      <Card className="border-primary/20 shadow-md">
         <CardHeader className="bg-primary/5">
-          <CardTitle className="text-2xl">Admin Dashboard</CardTitle>
-          <CardDescription>Manage matches, questions, and answers</CardDescription>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <motion.div
+                  initial={{ rotate: 0 }}
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                >
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </motion.div>
+                Admin Dashboard
+              </CardTitle>
+              <CardDescription>Manage matches, questions, and answers</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={refreshData} disabled={isRefreshing}>
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+                      Refresh
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Refresh questions and statistics</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter
+                    <ChevronDown className="h-4 w-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Filter Questions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setFilterStatus("all")}>
+                    {filterStatus === "all" && <Check className="h-4 w-4 mr-2" />}
+                    All Questions
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("active")}>
+                    {filterStatus === "active" && <Check className="h-4 w-4 mr-2" />}
+                    Active Questions
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("inactive")}>
+                    {filterStatus === "inactive" && <Check className="h-4 w-4 mr-2" />}
+                    Inactive Questions
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("answered")}>
+                    {filterStatus === "answered" && <Check className="h-4 w-4 mr-2" />}
+                    Answered Questions
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("unanswered")}>
+                    {filterStatus === "unanswered" && <Check className="h-4 w-4 mr-2" />}
+                    Unanswered Questions
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </CardHeader>
+
+        {/* Stats Cards */}
+        <div className="px-6 pt-2 pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {isLoadingStats ? (
+              <>
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-32 w-full" />
+              </>
+            ) : (
+              <>
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Questions</p>
+                        <h3 className="text-2xl font-bold">{adminStats.totalQuestions}</h3>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <BarChart4 className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>{adminStats.answeredQuestions} answered</span>
+                        <span>{adminStats.activeQuestions} active</span>
+                      </div>
+                      <Progress
+                        value={
+                          adminStats.totalQuestions > 0
+                            ? (adminStats.answeredQuestions / adminStats.totalQuestions) * 100
+                            : 0
+                        }
+                        className="h-1.5"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Matches</p>
+                        <h3 className="text-2xl font-bold">{adminStats.totalMatches}</h3>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Trophy className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span>{adminStats.upcomingMatches} upcoming</span>
+                        <span>{adminStats.totalMatches - adminStats.upcomingMatches} completed</span>
+                      </div>
+                      <Progress
+                        value={
+                          adminStats.totalMatches > 0 ? (adminStats.upcomingMatches / adminStats.totalMatches) * 100 : 0
+                        }
+                        className="h-1.5"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Users</p>
+                        <h3 className="text-2xl font-bold">{adminStats.totalUsers.toLocaleString()}</h3>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Users className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <p className="text-xs text-muted-foreground">Active platform participants</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-primary/5 border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Total Predictions</p>
+                        <h3 className="text-2xl font-bold">{adminStats.totalPredictions.toLocaleString()}</h3>
+                      </div>
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <p className="text-xs text-muted-foreground">Avg. {adminStats.avgPredictionsPerUser} per user</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        </div>
+
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Sidebar */}
             <div className="md:col-span-1">
-              <Card>
-                <CardHeader className="bg-primary/5 pb-2">
-                  <CardTitle className="text-lg">Matches</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <ScrollArea className="h-[400px]">
-                    {isLoadingMatches ? (
-                      <div className="p-4 space-y-4">
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                        <Skeleton className="h-12 w-full" />
-                      </div>
-                    ) : (
-                      <div className="divide-y">
-                        {matches.map((match) => (
-                          <div
-                            key={match._id}
-                            className={`p-3 cursor-pointer hover:bg-muted/30 transition-colors ${
-                              selectedMatch?._id === match._id ? "bg-primary/10" : ""
-                            }`}
-                            onClick={() => handleMatchSelect(match._id)}
-                          >
-                            <div className="font-medium">
-                              {match.teamA} vs {match.teamB}
+              <div className="space-y-6">
+                <Card className="shadow-sm">
+                  <CardHeader className="bg-primary/5 pb-2">
+                    <CardTitle className="text-lg">Matches</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ScrollArea className="h-[300px]">
+                      {isLoadingMatches ? (
+                        <div className="p-4 space-y-4">
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                        </div>
+                      ) : (
+                        <div className="divide-y">
+                          {matches.map((match) => (
+                            <motion.div
+                              key={match._id}
+                              whileHover={{ backgroundColor: "rgba(var(--primary), 0.05)" }}
+                              className={`p-3 cursor-pointer transition-colors ${
+                                selectedMatch?._id === match._id ? "bg-primary/10" : ""
+                              }`}
+                              onClick={() => handleMatchSelect(match._id)}
+                            >
+                              <div className="font-medium">
+                                {match.teamA} vs {match.teamB}
+                              </div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(match.matchDate)}
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+
+                {/* Recent Activity */}
+                <Card className="shadow-sm">
+                  <CardHeader className="bg-primary/5 pb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      Recent Activity
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <ScrollArea className="h-[200px]">
+                      {isLoadingStats ? (
+                        <div className="p-4 space-y-4">
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                          <Skeleton className="h-12 w-full" />
+                        </div>
+                      ) : recentActivity.length > 0 ? (
+                        <div className="divide-y">
+                          {recentActivity.map((activity) => (
+                            <div key={activity.id} className="p-3">
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarFallback className="text-xs">{getInitials(activity.user)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                  <p className="text-xs font-medium">{activity.user}</p>
+                                  <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                                    {activity.question}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center mt-1">
+                                <Badge variant="outline" className="text-xs">
+                                  {activity.option}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">{formatDate(activity.timestamp)}</span>
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(match.matchDate)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-full p-4">
+                          <p className="text-sm text-muted-foreground text-center">No recent activity to display</p>
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Main Content */}
             <div className="md:col-span-3">
-              <Tabs defaultValue="questions" onValueChange={setActiveTab}>
+              <Tabs defaultValue="questions" onValueChange={setActiveTab} value={activeTab}>
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="questions">Manage Questions</TabsTrigger>
+                  <TabsTrigger value="questions" className="relative">
+                    Manage Questions
+                    {filteredQuestions.length > 0 && (
+                      <Badge className="ml-2 bg-primary text-primary-foreground">{filteredQuestions.length}</Badge>
+                    )}
+                  </TabsTrigger>
                   <TabsTrigger value="add">Add New Question</TabsTrigger>
                 </TabsList>
 
                 {/* Questions Tab */}
                 <TabsContent value="questions" className="mt-4">
-                  <Card>
-                    <CardHeader className="bg-primary/5">
-                      <CardTitle className="flex items-center justify-between">
-                        <span>
-                          Questions for {selectedMatch ? `${selectedMatch.teamA} vs ${selectedMatch.teamB}` : "Match"}
-                        </span>
-                        <Badge variant="outline">
-                          {questions.length} {questions.length === 1 ? "Question" : "Questions"}
-                        </Badge>
-                      </CardTitle>
+                  <Card className="shadow-sm">
+                    <CardHeader className="bg-primary/5 pb-4">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <CardTitle className="flex items-center justify-between">
+                          <span>
+                            Questions for {selectedMatch ? `${selectedMatch.teamA} vs ${selectedMatch.teamB}` : "Match"}
+                          </span>
+                        </CardTitle>
+
+                        <div className="relative w-full md:w-64">
+                          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input
+                            placeholder="Search questions..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="pl-8 pr-8"
+                          />
+                          {searchQuery && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="absolute right-0 top-0 h-full"
+                              onClick={() => setSearchQuery("")}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Active filters display */}
+                      {(searchQuery || filterStatus !== "all") && (
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-xs text-muted-foreground">Active filters:</span>
+                          {searchQuery && (
+                            <Badge variant="outline" className="text-xs gap-1 px-2 py-0">
+                              Search: {searchQuery}
+                              <X className="h-3 w-3 cursor-pointer" onClick={() => setSearchQuery("")} />
+                            </Badge>
+                          )}
+                          {filterStatus !== "all" && (
+                            <Badge variant="outline" className="text-xs gap-1 px-2 py-0 capitalize">
+                              Status: {filterStatus}
+                              <X className="h-3 w-3 cursor-pointer" onClick={() => setFilterStatus("all")} />
+                            </Badge>
+                          )}
+                          <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={clearFilters}>
+                            Clear all
+                          </Button>
+                        </div>
+                      )}
                     </CardHeader>
                     <CardContent className="p-0">
                       <ScrollArea className="h-[500px]">
@@ -388,10 +847,16 @@ export default function AdminDashboard() {
                             <Skeleton className="h-32 w-full" />
                             <Skeleton className="h-32 w-full" />
                           </div>
-                        ) : questions.length > 0 ? (
+                        ) : filteredQuestions.length > 0 ? (
                           <div className="divide-y">
-                            {questions.map((question) => (
-                              <div key={question._id} className="p-4">
+                            {filteredQuestions.map((question) => (
+                              <motion.div
+                                key={question._id}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="p-4 hover:bg-muted/30 transition-colors"
+                              >
                                 <div className="flex justify-between items-start mb-2">
                                   <div>
                                     <h3 className="font-medium text-lg">{question.question}</h3>
@@ -467,16 +932,24 @@ export default function AdminDashboard() {
                                     )}
                                   </Button>
                                 </div>
-                              </div>
+                              </motion.div>
                             ))}
                           </div>
                         ) : (
                           <div className="flex flex-col items-center justify-center h-64">
                             <AlertTriangle className="h-12 w-12 text-muted-foreground mb-4" />
                             <p className="text-muted-foreground text-center">
-                              No questions found for this match.
+                              {searchQuery || filterStatus !== "all"
+                                ? "No questions match your search criteria."
+                                : "No questions found for this match."}
                               <br />
-                              Create a new question using the &quot;Add New Question&quot; tab.
+                              {searchQuery || filterStatus !== "all" ? (
+                                <Button variant="link" onClick={clearFilters} className="p-0 h-auto">
+                                  Clear filters
+                                </Button>
+                              ) : (
+                                'Create a new question using the "Add New Question" tab.'
+                              )}
                             </p>
                           </div>
                         )}
@@ -487,7 +960,7 @@ export default function AdminDashboard() {
 
                 {/* Add New Question Tab */}
                 <TabsContent value="add" className="mt-4">
-                  <Card>
+                  <Card className="shadow-sm">
                     <CardHeader className="bg-primary/5">
                       <CardTitle>Add New Question</CardTitle>
                       <CardDescription>
@@ -581,9 +1054,12 @@ export default function AdminDashboard() {
                       </div>
                     </CardContent>
                     <CardFooter className="bg-primary/5 flex justify-end">
-                      <Button onClick={handleCreateQuestion}>
-                        <PlusCircle className="h-4 w-4 mr-2" />
-                        Create Question
+                      <Button onClick={handleCreateQuestion} className="relative overflow-hidden group">
+                        <span className="relative z-10 flex items-center">
+                          <PlusCircle className="h-4 w-4 mr-2" />
+                          Create Question
+                        </span>
+                        <span className="absolute inset-0 bg-primary/20 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left"></span>
                       </Button>
                     </CardFooter>
                   </Card>
