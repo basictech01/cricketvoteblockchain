@@ -55,6 +55,7 @@ import { Toaster, toast } from "sonner"
 
 // Import the DashboardSignupIntegration component
 import DashboardSignupIntegration from "@/components/dashboard-signup-integration"
+import AdminDashboard from "@/components/admin"
 
 // Create a client
 const queryClient = new QueryClient()
@@ -81,7 +82,7 @@ export default function Home() {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <DashBoard />
+        <AdminDashboard />
       </QueryClientProvider>
     </WagmiProvider>
   )
