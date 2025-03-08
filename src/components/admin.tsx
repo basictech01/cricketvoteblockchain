@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useState, useEffect } from "react"
@@ -13,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Calendar, Clock, Plus, Edit, Save, Trash2, AlertTriangle, Check, X, PlusCircle, Pencil } from 'lucide-react'
+import { Calendar, Clock, Plus, Edit, Save, Trash2, AlertTriangle, Check, PlusCircle, Pencil } from "lucide-react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -50,7 +49,7 @@ export default function AdminDashboard() {
   const [isLoadingMatches, setIsLoadingMatches] = useState(true)
   const [isLoadingQuestions, setIsLoadingQuestions] = useState(false)
   const [activeTab, setActiveTab] = useState("questions")
-  
+
   // New question form state
   const [newQuestion, setNewQuestion] = useState({
     question: "",
@@ -59,11 +58,11 @@ export default function AdminDashboard() {
     closedAt: "",
     matchId: "",
   })
-  
+
   // Edit question state
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
-  
+
   // Answer setting state
   const [answerQuestion, setAnswerQuestion] = useState<Question | null>(null)
   const [selectedAnswer, setSelectedAnswer] = useState("")
@@ -80,7 +79,7 @@ export default function AdminDashboard() {
           setMatches(data.matches)
           // Select the first match by default
           setSelectedMatch(data.matches[0])
-          setNewQuestion(prev => ({ ...prev, matchId: data.matches[0]._id }))
+          setNewQuestion((prev) => ({ ...prev, matchId: data.matches[0]._id }))
         }
       } catch (error) {
         console.error("Error fetching matches:", error)
@@ -97,7 +96,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchQuestions = async () => {
       if (!selectedMatch) return
-      
+
       setIsLoadingQuestions(true)
       try {
         const response = await fetch(`/api/layout/questions?id=${selectedMatch._id}`)
@@ -118,18 +117,18 @@ export default function AdminDashboard() {
 
   // Handle match selection
   const handleMatchSelect = (matchId: string) => {
-    const match = matches.find(m => m._id === matchId)
+    const match = matches.find((m) => m._id === matchId)
     if (match) {
       setSelectedMatch(match)
-      setNewQuestion(prev => ({ ...prev, matchId: match._id }))
+      setNewQuestion((prev) => ({ ...prev, matchId: match._id }))
     }
   }
 
   // Add option to new question
   const addOption = () => {
-    setNewQuestion(prev => ({
+    setNewQuestion((prev) => ({
       ...prev,
-      options: [...prev.options, ""]
+      options: [...prev.options, ""],
     }))
   }
 
@@ -139,10 +138,10 @@ export default function AdminDashboard() {
       toast.error("A question must have at least 2 options")
       return
     }
-    
-    setNewQuestion(prev => ({
+
+    setNewQuestion((prev) => ({
       ...prev,
-      options: prev.options.filter((_, i) => i !== index)
+      options: prev.options.filter((_, i) => i !== index),
     }))
   }
 
@@ -150,9 +149,9 @@ export default function AdminDashboard() {
   const updateOption = (index: number, value: string) => {
     const updatedOptions = [...newQuestion.options]
     updatedOptions[index] = value
-    setNewQuestion(prev => ({
+    setNewQuestion((prev) => ({
       ...prev,
-      options: updatedOptions
+      options: updatedOptions,
     }))
   }
 
@@ -163,22 +162,22 @@ export default function AdminDashboard() {
       toast.error("Question text is required")
       return
     }
-    
+
     if (!newQuestion.matchId) {
       toast.error("Please select a match")
       return
     }
-    
+
     if (!newQuestion.closedAt) {
       toast.error("Please set a closing date")
       return
     }
-    
-    if (newQuestion.options.some(opt => !opt.trim())) {
+
+    if (newQuestion.options.some((opt) => !opt.trim())) {
       toast.error("All options must have text")
       return
     }
-    
+
     try {
       const response = await fetch("/api/admin/questions", {
         method: "POST",
@@ -187,16 +186,16 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify(newQuestion),
       })
-      
+
       if (!response.ok) {
         throw new Error("Failed to create question")
       }
-      
+
       const data = await response.json()
-      
+
       // Add the new question to the list
-      setQuestions(prev => [...prev, data.question])
-      
+      setQuestions((prev) => [...prev, data.question])
+
       // Reset form
       setNewQuestion({
         question: "",
@@ -205,7 +204,7 @@ export default function AdminDashboard() {
         closedAt: "",
         matchId: selectedMatch?._id || "",
       })
-      
+
       toast.success("Question created successfully")
     } catch (error) {
       console.error("Error creating question:", error)
@@ -222,7 +221,7 @@ export default function AdminDashboard() {
   // Save edited question
   const saveEditedQuestion = async () => {
     if (!editingQuestion) return
-    
+
     try {
       const response = await fetch(`/api/admin/questions/${editingQuestion._id}`, {
         method: "PUT",
@@ -231,15 +230,14 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify(editingQuestion),
       })
-      
+
       if (!response.ok) {
         throw new Error("Failed to update question")
       }
-      
-      setQuestions(prev => 
-        prev.map(q => q._id === editingQuestion._id ? editingQuestion : q)
-      )
-      
+
+      // Update the question in the list
+      setQuestions((prev) => prev.map((q) => (q._id === editingQuestion._id ? editingQuestion : q)))
+
       setShowEditDialog(false)
       toast.success("Question updated successfully")
     } catch (error) {
@@ -258,7 +256,7 @@ export default function AdminDashboard() {
   // Save answer
   const saveAnswer = async () => {
     if (!answerQuestion || !selectedAnswer) return
-    
+
     try {
       const response = await fetch(`/api/admin/questions/${answerQuestion._id}/answer`, {
         method: "PUT",
@@ -267,16 +265,14 @@ export default function AdminDashboard() {
         },
         body: JSON.stringify({ answer: selectedAnswer }),
       })
-      
+
       if (!response.ok) {
         throw new Error("Failed to set answer")
       }
-      
+
       // Update the question in the list
-      setQuestions(prev => 
-        prev.map(q => q._id === answerQuestion._id ? { ...q, answer: selectedAnswer } : q)
-      )
-      
+      setQuestions((prev) => prev.map((q) => (q._id === answerQuestion._id ? { ...q, answer: selectedAnswer } : q)))
+
       setShowAnswerDialog(false)
       toast.success("Answer set successfully")
     } catch (error) {
@@ -418,8 +414,8 @@ export default function AdminDashboard() {
                                       key={index}
                                       className={`p-2 rounded-md border ${
                                         question.answer === option
-                                          ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                                          : "border-muted"
+                                          ? "border-green-500 bg-green-500/10 dark:bg-green-900/20"
+                                          : "border-muted bg-background"
                                       }`}
                                     >
                                       <div className="flex items-center gap-2">
@@ -431,14 +427,14 @@ export default function AdminDashboard() {
                                           }`}
                                         >
                                           {question.answer === option && (
-                                            <div className="h-2 w-2 m-[3px] rounded-full bg-white" />
+                                            <div className="h-2 w-2 m-[3px] rounded-full bg-background" />
                                           )}
                                         </div>
-                                        <span>{option}</span>
+                                        <span className="text-foreground">{option}</span>
                                         {question.answer === option && (
                                           <Badge
                                             variant="outline"
-                                            className="ml-auto text-xs bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+                                            className="ml-auto text-xs bg-green-500/10 text-green-600 dark:bg-green-900/20 dark:text-green-400 border-green-500/20"
                                           >
                                             Correct Answer
                                           </Badge>
@@ -449,11 +445,7 @@ export default function AdminDashboard() {
                                 </div>
 
                                 <div className="flex justify-end gap-2 mt-4">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleEditQuestion(question)}
-                                  >
+                                  <Button variant="outline" size="sm" onClick={() => handleEditQuestion(question)}>
                                     <Edit className="h-4 w-4 mr-1" />
                                     Edit
                                   </Button>
@@ -499,7 +491,8 @@ export default function AdminDashboard() {
                     <CardHeader className="bg-primary/5">
                       <CardTitle>Add New Question</CardTitle>
                       <CardDescription>
-                        Create a new prediction question for {selectedMatch ? `${selectedMatch.teamA} vs ${selectedMatch.teamB}` : "the selected match"}
+                        Create a new prediction question for{" "}
+                        {selectedMatch ? `${selectedMatch.teamA} vs ${selectedMatch.teamB}` : "the selected match"}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="p-6">
@@ -510,16 +503,13 @@ export default function AdminDashboard() {
                             id="question"
                             placeholder="Enter your question here..."
                             value={newQuestion.question}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewQuestion(prev => ({ ...prev, question: e.target.value }))}
+                            onChange={(e) => setNewQuestion((prev) => ({ ...prev, question: e.target.value }))}
                           />
                         </div>
 
                         <div className="space-y-2">
                           <Label htmlFor="match">Match</Label>
-                          <Select
-                            value={newQuestion.matchId}
-                            onValueChange={(value: string) => handleMatchSelect(value)}
-                          >
+                          <Select value={newQuestion.matchId} onValueChange={(value) => handleMatchSelect(value)}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a match" />
                             </SelectTrigger>
@@ -539,7 +529,7 @@ export default function AdminDashboard() {
                             id="closedAt"
                             type="datetime-local"
                             value={newQuestion.closedAt}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewQuestion(prev => ({ ...prev, closedAt: e.target.value }))}
+                            onChange={(e) => setNewQuestion((prev) => ({ ...prev, closedAt: e.target.value }))}
                           />
                         </div>
 
@@ -547,7 +537,7 @@ export default function AdminDashboard() {
                           <Switch
                             id="isActive"
                             checked={newQuestion.isActive}
-                            onCheckedChange={(checked: any) => setNewQuestion(prev => ({ ...prev, isActive: checked }))}
+                            onCheckedChange={(checked) => setNewQuestion((prev) => ({ ...prev, isActive: checked }))}
                           />
                           <Label htmlFor="isActive">Active</Label>
                         </div>
@@ -618,7 +608,7 @@ export default function AdminDashboard() {
                 <Textarea
                   id="edit-question"
                   value={editingQuestion.question}
-                  onChange={(e: { target: { value: any } }) => setEditingQuestion({ ...editingQuestion, question: e.target.value })}
+                  onChange={(e) => setEditingQuestion({ ...editingQuestion, question: e.target.value })}
                 />
               </div>
 
@@ -636,7 +626,7 @@ export default function AdminDashboard() {
                 <Switch
                   id="edit-isActive"
                   checked={editingQuestion.isActive}
-                  onCheckedChange={(checked: any) => setEditingQuestion({ ...editingQuestion, isActive: checked })}
+                  onCheckedChange={(checked) => setEditingQuestion({ ...editingQuestion, isActive: checked })}
                 />
                 <Label htmlFor="edit-isActive">Active</Label>
               </div>
@@ -688,7 +678,7 @@ export default function AdminDashboard() {
                     className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
                       selectedAnswer === option
                         ? "border-primary bg-primary/10"
-                        : "border-muted hover:border-primary/50"
+                        : "border-muted hover:border-primary/50 bg-background"
                     }`}
                     onClick={() => setSelectedAnswer(option)}
                   >
@@ -698,9 +688,9 @@ export default function AdminDashboard() {
                           selectedAnswer === option ? "border-primary bg-primary" : "border-muted-foreground"
                         }`}
                       >
-                        {selectedAnswer === option && <div className="h-2 w-2 m-[3px] rounded-full bg-white" />}
+                        {selectedAnswer === option && <div className="h-2 w-2 m-[3px] rounded-full bg-background" />}
                       </div>
-                      <span className="font-medium">{option}</span>
+                      <span className="font-medium text-foreground">{option}</span>
                     </div>
                   </div>
                 ))}
@@ -721,3 +711,4 @@ export default function AdminDashboard() {
     </div>
   )
 }
+

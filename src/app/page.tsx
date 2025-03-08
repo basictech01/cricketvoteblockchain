@@ -200,7 +200,7 @@ function DashBoard() {
             // Determine status based on question answer
             if (bet.question.answer) {
               status = bet.option === bet.question.answer ? "won" : "lost"
-              reward = status === "won" ? 100 : 0 // Basic reward calculation
+              reward = status === "won" ? 1 : 0 // Basic reward calculation
             }
 
             return {
