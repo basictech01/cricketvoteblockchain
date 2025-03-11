@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     existingQuestion.answer = requestBody.answer;
+    existingQuestion.isActive = false;
     await existingQuestion.save();
 
     return NextResponse.json({ message: "Answer updated successfully", question: existingQuestion }, { status: 200 });
