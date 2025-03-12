@@ -9,7 +9,7 @@ import Question from "@/lib/model/Question";
 const CONTRACT_ADDRESS = "0xaB56f0D19e3Df8f7940F29DE488ADdEeE898b478";
 import TOKEN_ABI from "@/abis/BettingReward.json";
 const RPC_URL = "https://rpc.ankr.com/eth_sepolia";
-const PRIVATE_KEY = "8c5dfe5b62fbb3f96636b85ac7bba21bc821fd99d05c39d51a4f074d73cb75b2";
+const PRIVATE_KEY = process.env.PRIVATE_KEY || "";
 
 import mongoose from "mongoose";
 
@@ -36,15 +36,21 @@ export async function POST(req: Request) {
         const bets = await Bet.find({ question: { $in: questions.map(question => question._id.toString()) } });
         const users = await User.find({ _id: { $in: bets.map(bet => bet.user) } });
 
-        // Compute rewards (e.g., 2 tokens per correct bet)
-        const rewards = bets.map((bet) => {
+        // Aggregate rewards per user
+        const rewardsMap = new Map<string, number>();
 
+        bets.forEach((bet) => {
             const question = questions.find(q => q._id.toString() === bet.question);
             const correct = question?.answer === bet.option;
+            if (correct) {
+                const userAddress = users.find(u => u._id.toString() === bet.user)?.address;
+                if (userAddress) {
+                    rewardsMap.set(userAddress, (rewardsMap.get(userAddress) || 0) + 2);
+                }
+            }
+        });
 
-
-            return { user: users.find(u => u._id.toString() === bet.user)?.address, reward: correct ? 2 : 0 };
-        }).filter(b => b.reward > 0);
+        const rewards = Array.from(rewardsMap.entries()).map(([user, reward]) => ({ user, reward }));
 
         if (rewards.length === 0) {
             return NextResponse.json({ error: "No winners found" }, { status: 400 });
