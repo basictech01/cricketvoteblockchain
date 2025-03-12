@@ -58,8 +58,7 @@ import { cn } from "@/lib/utils"
 import { ethers } from "ethers"
 import keccak256 from "keccak256"
 import { MerkleTree } from "merkletreejs"
-import mongoose from "mongoose"
-import TOKEN_ABI from "@/abis/BettingReward.json";
+import TOKEN_ABI from "@/abis/BettingReward.json"
 
 interface Match {
   _id: string
@@ -102,6 +101,11 @@ interface Prediction {
   claimed?: boolean
   isClaimLoading?: boolean
   correctOption?: string
+}
+
+interface RewardData {
+  user: string
+  reward: number
 }
 
 export default function DashBoard() {
@@ -422,6 +426,21 @@ export default function DashBoard() {
     }
   }
 
+  // Convert MongoDB ObjectId to a uint256 compatible format
+  const convertObjectIdToUint256 = (objectId: string): string => {
+    // Remove any non-hex characters and ensure it's a valid hex string
+    const cleanHex = objectId.replace(/[^0-9a-fA-F]/g, "")
+
+    // If the string is too short, pad it
+    const paddedHex = cleanHex.padStart(64, "0")
+
+    // Take only the last 64 characters to ensure it fits in uint256
+    const truncatedHex = paddedHex.slice(-64)
+
+    // Return as a BigInt string
+    return BigInt("0x" + truncatedHex).toString()
+  }
+
   // Claim rewards function - consolidated in one place
   async function handleClaimAllRewards(matchId: string, predictions: Prediction[]) {
     try {
@@ -429,6 +448,8 @@ export default function DashBoard() {
         toast.error("MetaMask not detected! Please install MetaMask.")
         return
       }
+
+      predictions[0].reward=2;
 
       // Get all winning predictions for this match
       const matchPredictions = predictions.filter(
@@ -447,46 +468,6 @@ export default function DashBoard() {
       const signer = await provider.getSigner()
       const userAddress = await signer.getAddress()
 
-      // Fetch Merkle Root from the backend
-      const matchRes = await fetch(`/api/match`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ id: matchId }),
-        }
-      )
-      const { merkleRoot, rewards } = await matchRes.json();
-
-
-      if (!merkleRoot || rewards.length === 0) {
-        toast.error("Merkle root not found for this match.")
-        return
-      }
-
-      console.log(merkleRoot);
-      console.log(rewards);
-
-      // Compute Merkle proof
-      const leaves = rewards.map(({ user, reward }: { user: string; reward: number }) =>
-        keccak256(ethers.solidityPacked(["address", "uint256"], [user, reward])),
-      )
-
-      console.log(leaves);
-
-      // const tree = new MerkleTree(leaves, keccak256, { sortPairs: true })
-      // const leaf = keccak256(ethers.solidityPacked(["address", "uint256"], [userAddress, totalClaimed]))
-
-      // const proof = tree.getHexProof(leaf);
-
-
-
-      // if (!proof.length) {
-      //   toast.error("Invalid proof. Cannot claim reward.")
-      //   return
-      // }
-
       // Set loading state for all predictions in this match
       setPredictions((prev) =>
         prev.map((p) =>
@@ -494,23 +475,78 @@ export default function DashBoard() {
         ),
       )
 
+      // Fetch Merkle Root and rewards data from the backend
+      const matchRes = await fetch(`/api/match`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: matchId }),
+      })
+
+      if (!matchRes.ok) {
+        throw new Error("Failed to fetch match data")
+      }
+
+      const { merkleRoot, rewards } = await matchRes.json()
+
+      if (!merkleRoot || !rewards || rewards.length === 0) {
+        toast.error("Merkle root not found for this match.")
+        return
+      }
+
+      console.log("Merkle Root:", merkleRoot)
+      console.log("Rewards:", rewards)
+
+      // Find the user's reward in the rewards array
+      const userReward = rewards.find((r: RewardData) => r.user.toLowerCase() === userAddress.toLowerCase())
+
+      if (!userReward) {
+        toast.error("No reward found for your address")
+        return
+      }
+
+      console.log("User Reward:", userReward)
+
+      // Create leaves for the Merkle tree
+      const leaves = rewards.map((r: RewardData) =>
+        keccak256(ethers.solidityPacked(["address", "uint256"], [r.user, r.reward])),
+      )
+
+      // Create the Merkle tree
+      const tree = new MerkleTree(leaves, keccak256, { sortPairs: true })
+
+      // Create the leaf for the current user
+      const leaf = keccak256(ethers.solidityPacked(["address", "uint256"], [userAddress, userReward.reward]))
+
+      // Get the proof for the user's leaf
+      const proof = tree.getHexProof(leaf)
+
+      console.log("Generated Leaf:", leaf.toString("hex"))
+      console.log("Generated Proof:", proof)
+
+      if (!proof || proof.length === 0) {
+        console.error("Generated an empty proof. Merkle tree verification failed.")
+        toast.error("Failed to generate valid proof for claiming. Please contact support.")
+        return
+      }
+
       // Connect to the contract
       const contract = new ethers.Contract(CONTRACT_ADDRESS, TOKEN_ABI, signer)
 
-      function convertObjectIdToUint256(objectId: string): string {
-        if (!mongoose.Types.ObjectId.isValid(objectId)) {
-            throw new Error("Invalid MongoDB ObjectId");
-        }
-        const objectIdHex = new mongoose.Types.ObjectId(objectId).toHexString();
-        const hash = ethers.keccak256("0x" + objectIdHex);
-        return BigInt(hash).toString();
-    }
+      // Convert matchId to uint256 format
+      const matchIdForContract = convertObjectIdToUint256(matchId)
 
+      console.log("Sending transaction with:", {
+        matchId: matchIdForContract,
+        reward: userReward.reward,
+        proof,
+      })
 
       // Send claim transaction
-      // const proof = []
-      const tx = await contract.claimTokens(convertObjectIdToUint256(matchId), totalClaimed, proof)
-      await tx.wait();
+      const tx = await contract.claimTokens(matchIdForContract, userReward.reward, proof)
+
+      await tx.wait()
 
       // Update state after successful claim
       setPredictions((prev) =>
@@ -521,7 +557,7 @@ export default function DashBoard() {
         ),
       )
 
-      toast.success(`Successfully claimed ${totalClaimed} CPT tokens!`)
+      toast.success(`Successfully claimed ${userReward.reward} CPT tokens!`)
     } catch (error) {
       console.error("Error claiming rewards:", error)
       toast.error("Failed to claim rewards. Please try again.")
@@ -1217,8 +1253,8 @@ export default function DashBoard() {
                                               <X className="h-3 w-3 mr-1" />
                                             ) : (
                                               <Clock className="h-3 w-3 mr-1" />
-                                            )}{" "}
-                                              {prediction.selectedOption}
+                                            )}
+                                            {prediction.selectedOption}
                                           </Badge>
                                         ))}
                                         {group.predictions.length > 3 && (
