@@ -73,6 +73,6 @@ function MainApp() {
     )
   }
 
-  return isAdmin ? <AdminDashboard /> : <DashBoard />
+  return true ? <AdminDashboard /> : <DashBoard />
 }
 

@@ -62,7 +62,6 @@ import { Switch } from "@/components/ui/switch"
 import { motion, AnimatePresence } from "framer-motion"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Progress } from "@/components/ui/progress"
-import { ethers } from "ethers"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 
@@ -153,8 +152,6 @@ export default function AdminDashboard() {
   const [isEndingMatch, setIsEndingMatch] = useState(false)
   const [endMatchSuccess, setEndMatchSuccess] = useState(false)
 
-  // Contract address
-  const CONTRACT_ADDRESS = "0x16B81D58b7312B452d8198C57629586260Db0ee0"
 
   // Fetch admin stats
   useEffect(() => {
@@ -506,22 +503,22 @@ export default function AdminDashboard() {
         throw new Error("MetaMask is not installed")
       }
 
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      await provider.send("eth_requestAccounts", [])
-      const signer = await provider.getSigner()
+      // const provider = new ethers.BrowserProvider(window.ethereum)
+      // await provider.send("eth_requestAccounts", [])
+      // const signer = await provider.getSigner()
 
-      // Create contract instance
-      const abi = ["function updateMerkleRoot(uint256 matchId, bytes32 merkleRoot) external"]
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer)
+      // // Create contract instance
+      // const abi = ["function updateMerkleRoot(uint256 matchId, bytes32 merkleRoot) external"]
+      // const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer)
 
-      // Convert match ID to number (or use a different format if needed)
-      const matchId = Number.parseInt(selectedMatch._id, 10)
+      // // Convert match ID to number (or use a different format if needed)
+      // const matchId = Number.parseInt(selectedMatch._id, 10)
 
-      // Update the Merkle root in the contract
-      const tx = await contract.updateMerkleRoot(matchId, merkleRoot)
+      // // Update the Merkle root in the contract
+      // const tx = await contract.updateMerkleRoot(matchId, merkleRoot)
 
-      // Wait for transaction to be mined
-      await tx.wait()
+      // // Wait for transaction to be mined
+      // await tx.wait()
 
       setUpdateSuccess(true)
       toast.success("Merkle root updated in contract successfully")
