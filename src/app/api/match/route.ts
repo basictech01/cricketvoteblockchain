@@ -5,9 +5,9 @@ import User from "@/lib/model/User";
 import Question from "@/lib/model/Question";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest) {
   try {
-    const { id } = params;
+    const { id } = await req.json();
     const match = await Match.findById(id);
     if (!match) return NextResponse.json({ error: "Match not found" }, { status: 404 });
 
