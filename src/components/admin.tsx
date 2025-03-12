@@ -70,6 +70,8 @@ interface Match {
   teamA: string
   teamB: string
   matchDate: string
+  merkleRoot?: string
+  rewardsCount?: number
 }
 
 interface Question {
@@ -95,7 +97,6 @@ interface AdminStats {
 
 interface RewardsData {
   rewardsCount: number
-  totalTokens: number
 }
 
 export default function AdminDashboard() {
@@ -151,7 +152,6 @@ export default function AdminDashboard() {
   const [showEndMatchDialog, setShowEndMatchDialog] = useState(false)
   const [isEndingMatch, setIsEndingMatch] = useState(false)
   const [endMatchSuccess, setEndMatchSuccess] = useState(false)
-
 
   // Fetch admin stats
   useEffect(() => {
@@ -223,6 +223,33 @@ export default function AdminDashboard() {
     fetchQuestions()
   }, [selectedMatch])
 
+  // Fetch Merkle root data for selected match
+  useEffect(() => {
+    const fetchMerkleData = async () => {
+      if (!selectedMatch) return
+
+      try {
+        const response = await fetch(`/api/rewards/merkle-data?matchId=${selectedMatch._id}`)
+        const data = await response.json()
+
+        if (data.merkleRoot) {
+          setMerkleRoot(data.merkleRoot)
+          setRewardsData({
+            rewardsCount: data.rewardsCount || 0,
+          })
+
+          if (data.merkleRoot) {
+            setUpdateSuccess(true)
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching Merkle data:", error)
+      }
+    }
+
+    fetchMerkleData()
+  }, [selectedMatch])
+
   // Filter questions based on search and filter
   const filteredQuestions = useMemo(() => {
     return questions.filter((question) => {
@@ -265,8 +292,10 @@ export default function AdminDashboard() {
       setSelectedMatch(match)
       setNewQuestion((prev) => ({ ...prev, matchId: match._id }))
       // Reset Merkle tree state when changing matches
-      setMerkleRoot(null)
-      setRewardsData(null)
+      setMerkleRoot(match.merkleRoot || null)
+      setRewardsData({
+        rewardsCount: match.rewardsCount || 0,
+      })
       setUpdateSuccess(false)
     }
   }
@@ -440,7 +469,7 @@ export default function AdminDashboard() {
       const hadAnswerBefore = !!answerQuestion.answer
 
       // Update the question in the list
-      setQuestions((prev) => prev.map((q) => (q._id === answerQuestion._id ? { ...q, answer: selectedAnswer } : q)))
+      setQuestions((prev) => prev.map((q) => (q._id === answerQuestion._id ? { ...q, answer: selectedAnswer, isActive: false } : q)))
 
       // Update stats if this is a new answer
       if (!hadAnswerBefore) {
@@ -481,9 +510,9 @@ export default function AdminDashboard() {
       setMerkleRoot(data.merkleRoot)
       setRewardsData({
         rewardsCount: data.rewardsCount,
-        totalTokens: data.totalTokens,
       })
-      toast.success("Merkle root generated successfully")
+
+      toast.success("Merkle root generated and saved successfully")
     } catch (error) {
       console.error("Error generating Merkle root:", error)
       toast.error(error instanceof Error ? error.message : "Failed to generate Merkle root")
@@ -519,6 +548,17 @@ export default function AdminDashboard() {
 
       // // Wait for transaction to be mined
       // await tx.wait()
+
+      // Update match with success status
+      await fetch(`/api/admin/matches/${selectedMatch._id}/merkle-status`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          updateSuccess: true,
+        }),
+      })
 
       setUpdateSuccess(true)
       toast.success("Merkle root updated in contract successfully")
@@ -1259,6 +1299,17 @@ export default function AdminDashboard() {
                               <CardDescription>
                                 Create a Merkle tree for all winning predictions in this match
                               </CardDescription>
+                              {selectedMatch && selectedMatch.merkleRoot && (
+                                <div className="mt-2">
+                                  <Badge
+                                    variant="outline"
+                                    className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                                  >
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    Merkle Root Stored
+                                  </Badge>
+                                </div>
+                              )}
                             </CardHeader>
                             <CardContent className="p-4">
                               <div className="space-y-4">
@@ -1283,7 +1334,7 @@ export default function AdminDashboard() {
                                           </div>
                                           <div className="flex justify-between">
                                             <span className="text-sm font-medium">Total Tokens to Distribute:</span>
-                                            <span className="text-sm">{rewardsData.totalTokens} CPT</span>
+                                            <span className="text-sm">{rewardsData.rewardsCount * 2} CPT</span>
                                           </div>
                                         </>
                                       )}
@@ -1576,7 +1627,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-sm font-medium">Total Tokens:</span>
-                          <span className="text-sm">{rewardsData.totalTokens} CPT</span>
+                          <span className="text-sm">{rewardsData.rewardsCount * 2} CPT</span>
                         </div>
                       </>
                     )}
