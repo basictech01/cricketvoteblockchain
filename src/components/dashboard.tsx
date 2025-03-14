@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
-
+import mongoose from "mongoose"
 import { useState, useEffect, useMemo } from "react"
 import { useReadContract, useWriteContract, useAccount, useSwitchChain } from "wagmi"
 import { sepolia } from "wagmi/chains"
@@ -110,7 +110,7 @@ interface RewardData {
 
 export default function DashBoard() {
   // Contract address for token claiming
-  const CONTRACT_ADDRESS = "0xaB56f0D19e3Df8f7940F29DE488ADdEeE898b478"
+  const CONTRACT_ADDRESS = "0xCC4B1B743103e5575BDcC2E032BCB3EEa91498f9"
 
   // Chain and account hooks
   const { chains, switchChain } = useSwitchChain()
@@ -426,19 +426,13 @@ export default function DashBoard() {
     }
   }
 
-  // Convert MongoDB ObjectId to a uint256 compatible format
-  const convertObjectIdToUint256 = (objectId: string): string => {
-    // Remove any non-hex characters and ensure it's a valid hex string
-    const cleanHex = objectId.replace(/[^0-9a-fA-F]/g, "")
-
-    // If the string is too short, pad it
-    const paddedHex = cleanHex.padStart(64, "0")
-
-    // Take only the last 64 characters to ensure it fits in uint256
-    const truncatedHex = paddedHex.slice(-64)
-
-    // Return as a BigInt string
-    return BigInt("0x" + truncatedHex).toString()
+  function convertObjectIdToUint256(objectId: string): string {
+    if (!mongoose.Types.ObjectId.isValid(objectId)) {
+      throw new Error("Invalid MongoDB ObjectId")
+    }
+    const objectIdHex = new mongoose.Types.ObjectId(objectId).toHexString()
+    const hash = ethers.keccak256("0x" + objectIdHex)
+    return BigInt(hash).toString()
   }
 
   // Claim rewards function - consolidated in one place
@@ -448,8 +442,6 @@ export default function DashBoard() {
         toast.error("MetaMask not detected! Please install MetaMask.")
         return
       }
-
-      predictions[0].reward=2;
 
       // Get all winning predictions for this match
       const matchPredictions = predictions.filter(
@@ -481,24 +473,20 @@ export default function DashBoard() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ id: matchId }),
+        body: JSON.stringify({ id: matchId,address }),
       })
 
       if (!matchRes.ok) {
         throw new Error("Failed to fetch match data")
       }
 
-      const { merkleRoot, rewards } = await matchRes.json()
+      const { merkleRoot, rewards,proof } = await matchRes.json()
 
       if (!merkleRoot || !rewards || rewards.length === 0) {
         toast.error("Merkle root not found for this match.")
         return
       }
 
-      console.log("Merkle Root:", merkleRoot)
-      console.log("Rewards:", rewards)
-
-      // Find the user's reward in the rewards array
       const userReward = rewards.find((r: RewardData) => r.user.toLowerCase() === userAddress.toLowerCase())
 
       if (!userReward) {
@@ -506,32 +494,8 @@ export default function DashBoard() {
         return
       }
 
-      console.log("User Reward:", userReward)
 
-      // Create leaves for the Merkle tree
-      const leaves = rewards.map((r: RewardData) =>
-        keccak256(ethers.solidityPacked(["address", "uint256"], [r.user, r.reward])),
-      )
 
-      // Create the Merkle tree
-      const tree = new MerkleTree(leaves, keccak256, { sortPairs: true })
-
-      // Create the leaf for the current user
-      const leaf = keccak256(ethers.solidityPacked(["address", "uint256"], [userAddress, userReward.reward]))
-
-      // Get the proof for the user's leaf
-      const proof = tree.getHexProof(leaf)
-
-      console.log("Generated Leaf:", leaf.toString("hex"))
-      console.log("Generated Proof:", proof)
-
-      if (!proof || proof.length === 0) {
-        console.error("Generated an empty proof. Merkle tree verification failed.")
-        toast.error("Failed to generate valid proof for claiming. Please contact support.")
-        return
-      }
-
-      // Connect to the contract
       const contract = new ethers.Contract(CONTRACT_ADDRESS, TOKEN_ABI, signer)
 
       // Convert matchId to uint256 format
@@ -544,7 +508,7 @@ export default function DashBoard() {
       })
 
       // Send claim transaction
-      const tx = await contract.claimTokens(matchIdForContract, userReward.reward, proof)
+      const tx = await contract.claimTokens(matchIdForContract, 2, proof)
 
       await tx.wait()
 
@@ -564,6 +528,9 @@ export default function DashBoard() {
 
       // Reset loading state
       setPredictions((prev) => prev.map((p) => (p.matchId === matchId ? { ...p, isClaimLoading: false } : p)))
+    }
+    finally{
+      setPredictions((prev) => prev.map((p) => (p.matchId === matchId ? { ...p, isClaimLoading: false } : p)));
     }
   }
 
