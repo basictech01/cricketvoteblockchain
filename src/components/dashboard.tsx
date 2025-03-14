@@ -435,82 +435,118 @@ export default function DashBoard() {
     return BigInt(hash).toString()
   }
 
-  // Claim rewards function - consolidated in one place
-  async function handleClaimAllRewards(matchId: string, predictions: Prediction[]) {
+// Claim rewards function - consolidated in one place
+async function handleClaimAllRewards(matchId: string, predictions: Prediction[]) {
+  try {
+    if (!window.ethereum) {
+      toast.error("MetaMask not detected! Please install MetaMask.")
+      return
+    }
+
+    // Get all winning predictions for this match
+    const matchPredictions = predictions.filter(
+      (p) => p.matchId === matchId && p.status === "won" && p.reward && !p.claimed,
+    )
+
+    if (matchPredictions.length === 0) {
+      toast.info("No rewards to claim for this match")
+      return
+    }
+
+    // Get user address from MetaMask
+    const provider = new ethers.BrowserProvider(window.ethereum)
+    const signer = await provider.getSigner()
+    const userAddress = await signer.getAddress()
+
+    console.log("User address from MetaMask:", userAddress)
+
+    // Set loading state for all predictions in this match
+    setPredictions((prev) =>
+      prev.map((p) => (p.matchId === matchId && p.status === "won" && !p.claimed ? { ...p, isClaimLoading: true } : p)),
+    )
+
+    // Fetch Merkle Root and rewards data from the backend
+    console.log("Fetching data from backend for match:", matchId)
+    const matchRes = await fetch(`/api/match`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ id: matchId, address: userAddress }),
+    })
+
+    if (!matchRes.ok) {
+      throw new Error(`Failed to fetch match data: ${matchRes.status}`)
+    }
+
+    const data = await matchRes.json()
+    console.log("Backend response:", data)
+
+    if (data.error) {
+      throw new Error(`Backend error: ${data.error}`)
+    }
+
+    const { merkleRoot, rewards, proof, matchIdForContract } = data
+
+    if (!merkleRoot || !rewards || rewards.length === 0) {
+      toast.error("Merkle root not found for this match.")
+      return
+    }
+
+    const userReward = rewards.find((r: RewardData) => r.user.toLowerCase() === userAddress.toLowerCase())
+
+    if (!userReward) {
+      toast.error("No reward found for your address")
+      return
+    }
+
+    console.log("User reward found:", userReward)
+    console.log("Proof from backend:", proof)
+
+    // CRITICAL FIX: Ensure proof is an array
+    const proofArray = Array.isArray(proof) ? proof : []
+    console.log("Proof array to use:", proofArray)
+
+    // Use the matchIdForContract from the backend if available, otherwise convert it here
+    const contractMatchId = matchIdForContract || convertObjectIdToUint256(matchId)
+
+    console.log("Contract parameters:", {
+      matchId: contractMatchId,
+      reward: userReward.reward,
+      proofLength: proofArray.length,
+    })
+
+    // Connect to the contract
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, TOKEN_ABI, signer)
+
+    // DEBUGGING: Try to call canClaim first to check if the claim would succeed
     try {
-      if (!window.ethereum) {
-        toast.error("MetaMask not detected! Please install MetaMask.")
-        return
+      const canClaim = await contract.canClaim(contractMatchId, userAddress, userReward.reward, proofArray)
+      console.log("Can claim check:", canClaim)
+
+      if (!canClaim) {
+        throw new Error("Contract says this user cannot claim rewards")
       }
+    } catch (checkError) {
+      console.error("Error checking canClaim:", checkError)
+      // Continue anyway, as this is just a check
+    }
 
-      // Get all winning predictions for this match
-      const matchPredictions = predictions.filter(
-        (p) => p.matchId === matchId && p.status === "won" && p.reward && !p.claimed,
-      )
+    // CRITICAL FIX: Use try/catch with estimateGas first to get better error messages
+    try {
+      const gasEstimate = await contract.claimTokens.estimateGas(contractMatchId, userReward.reward, proofArray)
+      console.log("Gas estimate:", gasEstimate.toString())
 
-      if (matchPredictions.length === 0) {
-        toast.info("No rewards to claim for this match")
-        return
-      }
+      // Add 20% buffer to gas estimate
+      const gasLimit = Math.floor(Number(gasEstimate) * 1.2)
 
-      const totalClaimed = matchPredictions.reduce((sum, p) => sum + (p.reward || 0), 0)
+      // Send claim transaction with explicit gas limit
+      const tx = await contract.claimTokens(contractMatchId, userReward.reward, proofArray, { gasLimit })
 
-      // Get user address from MetaMask
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const userAddress = await signer.getAddress()
+      console.log("Transaction sent:", tx.hash)
 
-      // Set loading state for all predictions in this match
-      setPredictions((prev) =>
-        prev.map((p) =>
-          p.matchId === matchId && p.status === "won" && !p.claimed ? { ...p, isClaimLoading: true } : p,
-        ),
-      )
-
-      // Fetch Merkle Root and rewards data from the backend
-      const matchRes = await fetch(`/api/match`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id: matchId,address }),
-      })
-
-      if (!matchRes.ok) {
-        throw new Error("Failed to fetch match data")
-      }
-
-      const { merkleRoot, rewards,proof } = await matchRes.json()
-
-      if (!merkleRoot || !rewards || rewards.length === 0) {
-        toast.error("Merkle root not found for this match.")
-        return
-      }
-
-      const userReward = rewards.find((r: RewardData) => r.user.toLowerCase() === userAddress.toLowerCase())
-
-      if (!userReward) {
-        toast.error("No reward found for your address")
-        return
-      }
-
-
-
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, TOKEN_ABI, signer)
-
-      // Convert matchId to uint256 format
-      const matchIdForContract = convertObjectIdToUint256(matchId)
-
-      console.log("Sending transaction with:", {
-        matchId: matchIdForContract,
-        reward: userReward.reward,
-        proof,
-      })
-
-      // Send claim transaction
-      const tx = await contract.claimTokens(matchIdForContract, 2, proof)
-
-      await tx.wait()
+      const receipt = await tx.wait()
+      console.log("Transaction confirmed in block:", receipt.blockNumber)
 
       // Update state after successful claim
       setPredictions((prev) =>
@@ -522,17 +558,52 @@ export default function DashBoard() {
       )
 
       toast.success(`Successfully claimed ${userReward.reward} CPT tokens!`)
-    } catch (error) {
-      console.error("Error claiming rewards:", error)
-      toast.error("Failed to claim rewards. Please try again.")
+    } catch (gasError) {
+      console.error("Gas estimation failed:", gasError)
 
-      // Reset loading state
-      setPredictions((prev) => prev.map((p) => (p.matchId === matchId ? { ...p, isClaimLoading: false } : p)))
+      // Try a direct transaction with a high gas limit as fallback
+      try {
+        console.log("Trying direct transaction with high gas limit...")
+        const tx = await contract.claimTokens(
+          contractMatchId,
+          userReward.reward,
+          proofArray,
+          { gasLimit: 500000 }, // High gas limit as fallback
+        )
+
+        console.log("Transaction sent:", tx.hash)
+
+        const receipt = await tx.wait()
+        console.log("Transaction confirmed in block:", receipt.blockNumber)
+
+        // Update state after successful claim
+        setPredictions((prev) =>
+          prev.map((p) =>
+            p.matchId === matchId && p.status === "won" && !p.claimed
+              ? { ...p, claimed: true, isClaimLoading: false }
+              : p,
+          ),
+        )
+
+        toast.success(`Successfully claimed ${userReward.reward} CPT tokens!`)
+      } catch (txError) {
+        console.error("Transaction failed:", txError)
+        handleError(txError)
+      }
     }
-    finally{
-      setPredictions((prev) => prev.map((p) => (p.matchId === matchId ? { ...p, isClaimLoading: false } : p)));
-    }
+  } catch (error) {
+    console.error("Error claiming rewards:", error)
+    handleError(error)
+  } finally {
+    setPredictions((prev) => prev.map((p) => (p.matchId === matchId ? { ...p, isClaimLoading: false } : p)))
   }
+}
+
+// Helper function to handle errors
+function handleError(error: unknown) {
+  console.error("Full error object:", error)
+}
+
 
   // Helper functions
   const formatAddress = (address: string | undefined) => {

@@ -79,5 +79,5 @@ function MainApp() {
     );
   }
 
-  return false ? <AdminDashboard /> : <DashBoard />;
+  return isAdmin ? <AdminDashboard /> : <DashBoard />;
 }
