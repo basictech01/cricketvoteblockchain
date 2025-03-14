@@ -1,12 +1,24 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-"use client"
-import mongoose from "mongoose"
-import { useState, useEffect, useMemo } from "react"
-import { useReadContract, useWriteContract, useAccount, useSwitchChain } from "wagmi"
-import { sepolia } from "wagmi/chains"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+"use client";
+import mongoose from "mongoose";
+import { useState, useEffect, useMemo } from "react";
+import {
+  useReadContract,
+  useWriteContract,
+  useAccount,
+  useSwitchChain,
+} from "wagmi";
+import { sepolia } from "wagmi/chains";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Coins,
   ArrowRight,
@@ -32,8 +44,8 @@ import {
   RefreshCw,
   Bookmark,
   BookmarkCheck,
-} from "lucide-react"
-import abi from "../abis/Vote.json"
+} from "lucide-react";
+import abi from "../abis/Vote.json";
 import {
   Dialog,
   DialogContent,
@@ -41,111 +53,128 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { motion, AnimatePresence } from "framer-motion"
-import { Progress } from "@/components/ui/progress"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Toaster, toast } from "sonner"
-import { ConnectButton } from "@/app/ConnectButton"
-import DashboardSignupIntegration from "@/components/dashboard-signup-integration"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { motion, AnimatePresence } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Toaster, toast } from "sonner";
+import { ConnectButton } from "@/app/ConnectButton";
+import DashboardSignupIntegration from "@/components/dashboard-signup-integration";
+import { cn } from "@/lib/utils";
 
-import { ethers } from "ethers"
-import keccak256 from "keccak256"
-import { MerkleTree } from "merkletreejs"
-import TOKEN_ABI from "@/abis/BettingReward.json"
+import { ethers } from "ethers";
+import TOKEN_ABI from "@/abis/BettingReward.json";
 
 interface Match {
-  _id: string
-  teamA: string
-  teamB: string
-  matchDate: string
+  _id: string;
+  teamA: string;
+  teamB: string;
+  matchDate: string;
 }
 
 interface Question {
-  _id: string
-  question: string
-  options: string[]
-  isActive: boolean
-  closedAt: string
-  answer?: string
-  matchId: string
+  _id: string;
+  question: string;
+  options: string[];
+  isActive: boolean;
+  closedAt: string;
+  answer?: string;
+  matchId: string;
 }
 
 interface Bet {
-  _id: string
-  question: Question
-  match: Match
-  option: string
-  createdAt: string
-  updatedAt: string
+  _id: string;
+  question: Question;
+  match: Match;
+  option: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Prediction {
-  teamA: string | undefined
-  teamB: string | undefined
-  id: string
-  match: string
-  question: string
-  selectedOption: string
-  date: string
-  status: "pending" | "won" | "lost"
-  reward?: number
-  matchId?: string
-  questionId?: string
-  claimed?: boolean
-  isClaimLoading?: boolean
-  correctOption?: string
+  teamA: string | undefined;
+  teamB: string | undefined;
+  id: string;
+  match: string;
+  question: string;
+  selectedOption: string;
+  date: string;
+  status: "pending" | "won" | "lost";
+  reward?: number;
+  matchId?: string;
+  questionId?: string;
+  claimed?: boolean;
+  isClaimLoading?: boolean;
+  correctOption?: string;
 }
 
 interface RewardData {
-  user: string
-  reward: number
+  user: string;
+  reward: number;
 }
 
 export default function DashBoard() {
   // Contract address for token claiming
-  const CONTRACT_ADDRESS = "0xCC4B1B743103e5575BDcC2E032BCB3EEa91498f9"
+  const CONTRACT_ADDRESS = "0xCC4B1B743103e5575BDcC2E032BCB3EEa91498f9";
 
   // Chain and account hooks
-  const { chains, switchChain } = useSwitchChain()
-  const { chain } = useAccount()
-  const { address, isConnected } = useAccount()
+  const { chains, switchChain } = useSwitchChain();
+  const { chain } = useAccount();
+  const { address, isConnected } = useAccount();
 
   // UI state
-  const [showNetworkDialog, setShowNetworkDialog] = useState(false)
-  const [matches, setMatches] = useState<Match[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(0)
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null)
+  const [showNetworkDialog, setShowNetworkDialog] = useState(false);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedOption, setSelectedOption] = useState<{
-    [key: string]: string
-  }>({})
-  const [isPlacingBet, setIsPlacingBet] = useState<{ [key: string]: boolean }>({})
-  const [isQuestionLoading, setIsQuestionLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("upcoming")
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [questions, setQuestions] = useState<Question[]>([])
-  const [predictions, setPredictions] = useState<Prediction[]>([])
-  const [userBets, setUserBets] = useState<Bet[]>([])
-  const [isLoadingBets, setIsLoadingBets] = useState(false)
-  const [winRate, setWinRate] = useState(0)
-  const [showVerificationDialog, setShowVerificationDialog] = useState(false)
-  const [pendingQuestionId, setPendingQuestionId] = useState<string | null>(null)
+    [key: string]: string;
+  }>({});
+  const [isPlacingBet, setIsPlacingBet] = useState<{ [key: string]: boolean }>(
+    {}
+  );
+  const [isQuestionLoading, setIsQuestionLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("upcoming");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [userBets, setUserBets] = useState<Bet[]>([]);
+  const [isLoadingBets, setIsLoadingBets] = useState(false);
+  const [winRate, setWinRate] = useState(0);
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+  const [pendingQuestionId, setPendingQuestionId] = useState<string | null>(
+    null
+  );
   const [selectedMatchDetails, setSelectedMatchDetails] = useState<{
-    matchId: string
-    match: string
-    predictions: Prediction[]
-    teamA?: string
-    teamB?: string
-  } | null>(null)
-  const [predictionFilter, setPredictionFilter] = useState<"all" | "won" | "lost" | "pending">("all")
-  const [refreshing, setRefreshing] = useState(false)
+    matchId: string;
+    match: string;
+    predictions: Prediction[];
+    teamA?: string;
+    teamB?: string;
+  } | null>(null);
+  const [predictionFilter, setPredictionFilter] = useState<
+    "all" | "won" | "lost" | "pending"
+  >("all");
+  const [refreshing, setRefreshing] = useState(false);
+  const [isClaimingRewards, setIsClaimingRewards] = useState(false);
+  const [claimTxHash, setClaimTxHash] = useState<string | null>(null);
 
   // Read token balance
   const { data: tokenBalance, isLoading: isBalanceLoading } = useReadContract({
@@ -153,55 +182,55 @@ export default function DashBoard() {
     address: "0x16B81D58b7312B452d8198C57629586260Db0ee0",
     functionName: "balanceOf",
     args: [address],
-  })
+  });
 
   // Write contract hook
-  const { writeContractAsync, isPending, isError, error } = useWriteContract()
+  const { writeContractAsync, isPending, isError, error } = useWriteContract();
 
   // Fetch matches
   useEffect(() => {
     const fetchMatches = async () => {
-      setIsLoading(true)
+      setIsLoading(true);
       try {
-        const response = await fetch("/api/layout/matches")
-        const data = await response.json()
+        const response = await fetch("/api/layout/matches");
+        const data = await response.json();
         if (data.matches && data.matches.length > 0) {
-          setMatches(data.matches)
+          setMatches(data.matches);
         }
       } catch (error) {
-        console.error("Error fetching matches:", error)
-        toast.error("Failed to load matches")
+        console.error("Error fetching matches:", error);
+        toast.error("Failed to load matches");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchMatches()
-  }, [])
+    fetchMatches();
+  }, []);
 
   // Fetch user bets
   useEffect(() => {
     const fetchUserBets = async () => {
-      if (!address) return
+      if (!address) return;
 
-      setIsLoadingBets(true)
+      setIsLoadingBets(true);
       try {
-        const response = await fetch(`/api/layout/bet?id=${address}`)
-        const data = await response.json()
+        const response = await fetch(`/api/layout/bet?id=${address}`);
+        const data = await response.json();
 
         if (response.ok && data.bets) {
-          setUserBets(data.bets)
+          setUserBets(data.bets);
 
           // Transform bets to predictions format
           const userPredictions = data.bets.map((bet: Bet) => {
-            const matchTeams = `${bet.match?.teamA} vs ${bet.match?.teamB}`
-            let status: "pending" | "won" | "lost" = "pending"
-            let reward = 0
+            const matchTeams = `${bet.match?.teamA} vs ${bet.match?.teamB}`;
+            let status: "pending" | "won" | "lost" = "pending";
+            let reward = 0;
 
             // Determine status based on question answer
             if (bet.question.answer) {
-              status = bet.option === bet.question.answer ? "won" : "lost"
-              reward = status === "won" ? 1 : 0 // Basic reward calculation
+              status = bet.option === bet.question.answer ? "won" : "lost";
+              reward = status === "won" ? 2 : 0; // Basic reward calculation - set to 2 tokens
             }
 
             return {
@@ -217,79 +246,88 @@ export default function DashBoard() {
               correctOption: bet.question.answer,
               teamA: bet.match?.teamA,
               teamB: bet.match?.teamB,
-            }
-          })
+            };
+          });
 
-          setPredictions(userPredictions)
+          setPredictions(userPredictions);
 
           // Calculate win rate
           if (userPredictions.length > 0) {
-            const wonPredictions = userPredictions.filter((p: { status: string }) => p.status === "won").length
-            const answeredPredictions = userPredictions.filter((p: { status: string }) => p.status !== "pending").length
+            const wonPredictions = userPredictions.filter(
+              (p: { status: string }) => p.status === "won"
+            ).length;
+            const answeredPredictions = userPredictions.filter(
+              (p: { status: string }) => p.status !== "pending"
+            ).length;
 
             if (answeredPredictions > 0) {
-              setWinRate(Math.round((wonPredictions / answeredPredictions) * 100))
+              setWinRate(
+                Math.round((wonPredictions / answeredPredictions) * 100)
+              );
             }
           }
         }
       } catch (error) {
-        console.error("Error fetching user bets:", error)
+        console.error("Error fetching user bets:", error);
       } finally {
-        setIsLoadingBets(false)
+        setIsLoadingBets(false);
       }
-    }
+    };
 
-    fetchUserBets()
-  }, [address, refreshing])
+    fetchUserBets();
+  }, [address, refreshing]);
 
   // Check network
   useEffect(() => {
     if (isConnected && chain && chain.id !== sepolia.id) {
-      setShowNetworkDialog(true)
+      setShowNetworkDialog(true);
     } else {
-      setShowNetworkDialog(false)
+      setShowNetworkDialog(false);
     }
-  }, [chain, isConnected])
+  }, [chain, isConnected]);
 
   // Fetch questions for selected match
   useEffect(() => {
     async function fetchQuestions() {
       if (selectedMatch) {
-        setIsQuestionLoading(true)
+        setIsQuestionLoading(true);
         try {
-          const res = await fetch(`/api/layout/questions?id=${selectedMatch._id}`, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          })
-          const data = await res.json()
+          const res = await fetch(
+            `/api/layout/questions?id=${selectedMatch._id}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
+          const data = await res.json();
           if (!res.ok) {
-            toast.error(data.message)
-            return
+            toast.error(data.message);
+            return;
           }
-          setQuestions(data.questions)
+          setQuestions(data.questions);
         } catch (error) {
-          console.error("Error fetching questions:", error)
-          toast.error("Failed to load match questions")
+          console.error("Error fetching questions:", error);
+          toast.error("Failed to load match questions");
         } finally {
-          setIsQuestionLoading(false)
+          setIsQuestionLoading(false);
         }
       } else {
-        setQuestions([])
+        setQuestions([]);
       }
     }
-    fetchQuestions()
-  }, [selectedMatch])
+    fetchQuestions();
+  }, [selectedMatch]);
 
   // Handle network switch
   const handleSwitchToSepolia = async () => {
     try {
-      switchChain({ chainId: sepolia.id })
+      switchChain({ chainId: sepolia.id });
     } catch (error) {
-      console.error("Failed to switch network:", error)
+      console.error("Failed to switch network:", error);
     }
-  }
+  };
 
   // User verification
   const verifyUser = async (address: string): Promise<boolean> => {
@@ -300,57 +338,57 @@ export default function DashBoard() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ address }),
-      })
-      const data = await response.json()
+      });
+      const data = await response.json();
 
       if (response.ok) {
-        return true
+        return true;
       }
 
-      return false
+      return false;
     } catch (error) {
-      console.error("Error verifying user:", error)
-      toast.error("Failed to verify user status")
-      return false
+      console.error("Error verifying user:", error);
+      toast.error("Failed to verify user status");
+      return false;
     }
-  }
+  };
 
   // Handle bet placement
   const handleBet = async (questionId: string) => {
     if (!address) {
-      toast.error("Please connect your wallet first")
-      return
+      toast.error("Please connect your wallet first");
+      return;
     }
 
     if (!selectedOption[questionId]) {
-      toast.error("Please select an option first")
-      return
+      toast.error("Please select an option first");
+      return;
     }
 
     // Set pending question ID for verification flow
-    setPendingQuestionId(questionId)
+    setPendingQuestionId(questionId);
 
     // Start verification process
     try {
-      const isVerified = await verifyUser(address)
+      const isVerified = await verifyUser(address);
 
       if (!isVerified) {
-        setShowVerificationDialog(true)
-        return
+        setShowVerificationDialog(true);
+        return;
       }
 
       // If verified, proceed with placing bet
-      await placeBet(questionId)
+      await placeBet(questionId);
     } catch (error) {
-      console.error("Error during verification:", error)
-      toast.error("Verification failed. Please try again.")
+      console.error("Error during verification:", error);
+      toast.error("Verification failed. Please try again.");
     }
-  }
+  };
 
   // Actual bet placement logic
   const placeBet = async (questionId: string) => {
     // Track loading state for this specific question
-    setIsPlacingBet((prev) => ({ ...prev, [questionId]: true }))
+    setIsPlacingBet((prev) => ({ ...prev, [questionId]: true }));
 
     try {
       // Call smart contract
@@ -358,7 +396,7 @@ export default function DashBoard() {
         address: "0x16B81D58b7312B452d8198C57629586260Db0ee0",
         abi: abi,
         functionName: "vote",
-      })
+      });
 
       // Call the backend API to create a betting instance
       const response = await fetch("/api/bet/create", {
@@ -371,15 +409,15 @@ export default function DashBoard() {
           questionId,
           option: selectedOption[questionId],
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to create betting instance")
+        throw new Error("Failed to create betting instance");
       }
 
       // Add to predictions
       if (selectedMatch) {
-        const question = questions.find((q) => q._id === questionId)
+        const question = questions.find((q) => q._id === questionId);
         if (question) {
           const newPrediction: Prediction = {
             id: Date.now().toString(),
@@ -392,9 +430,9 @@ export default function DashBoard() {
             questionId,
             teamA: selectedMatch.teamA,
             teamB: selectedMatch.teamB,
-          }
+          };
 
-          setPredictions((prev) => [newPrediction, ...prev])
+          setPredictions((prev) => [newPrediction, ...prev]);
         }
       }
 
@@ -402,241 +440,238 @@ export default function DashBoard() {
       setSelectedOption((prev) => ({
         ...prev,
         [questionId]: selectedOption[questionId], // Keep the selection to show user's choice
-      }))
+      }));
 
-      toast.success("Prediction placed successfully!")
+      toast.success("Prediction placed successfully!");
     } catch (error) {
-      console.error("Error placing bet:", error)
-      toast.error("Failed to place prediction. Please try again.")
+      console.error("Error placing bet:", error);
+      toast.error("Failed to place prediction. Please try again.");
     } finally {
-      setIsPlacingBet((prev) => ({ ...prev, [questionId]: false }))
-      setPendingQuestionId(null)
+      setIsPlacingBet((prev) => ({ ...prev, [questionId]: false }));
+      setPendingQuestionId(null);
     }
-  }
+  };
 
   // Handle verification completion
   const handleVerificationComplete = async (success: boolean) => {
-    setShowVerificationDialog(false)
+    setShowVerificationDialog(false);
 
     if (success && pendingQuestionId) {
-      await placeBet(pendingQuestionId)
+      await placeBet(pendingQuestionId);
     } else {
-      setPendingQuestionId(null)
-      toast.error("Please complete the sign-up process before making predictions.")
+      setPendingQuestionId(null);
+      toast.error(
+        "Please complete the sign-up process before making predictions."
+      );
     }
-  }
+  };
 
+  // Convert MongoDB ObjectId to uint256 for the contract
   function convertObjectIdToUint256(objectId: string): string {
     if (!mongoose.Types.ObjectId.isValid(objectId)) {
-      throw new Error("Invalid MongoDB ObjectId")
+      throw new Error("Invalid MongoDB ObjectId");
     }
-    const objectIdHex = new mongoose.Types.ObjectId(objectId).toHexString()
-    const hash = ethers.keccak256("0x" + objectIdHex)
-    return BigInt(hash).toString()
+    const objectIdHex = new mongoose.Types.ObjectId(objectId).toHexString();
+    const hash = ethers.keccak256("0x" + objectIdHex);
+    return BigInt(hash).toString();
   }
 
-// Claim rewards function - consolidated in one place
-async function handleClaimAllRewards(matchId: string, predictions: Prediction[]) {
-  try {
-    if (!window.ethereum) {
-      toast.error("MetaMask not detected! Please install MetaMask.")
-      return
-    }
-
-    // Get all winning predictions for this match
-    const matchPredictions = predictions.filter(
-      (p) => p.matchId === matchId && p.status === "won" && p.reward && !p.claimed,
-    )
-
-    if (matchPredictions.length === 0) {
-      toast.info("No rewards to claim for this match")
-      return
-    }
-
-    // Get user address from MetaMask
-    const provider = new ethers.BrowserProvider(window.ethereum)
-    const signer = await provider.getSigner()
-    const userAddress = await signer.getAddress()
-
-    console.log("User address from MetaMask:", userAddress)
-
-    // Set loading state for all predictions in this match
-    setPredictions((prev) =>
-      prev.map((p) => (p.matchId === matchId && p.status === "won" && !p.claimed ? { ...p, isClaimLoading: true } : p)),
-    )
-
-    // Fetch Merkle Root and rewards data from the backend
-    console.log("Fetching data from backend for match:", matchId)
-    const matchRes = await fetch(`/api/match`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ id: matchId, address: userAddress }),
-    })
-
-    if (!matchRes.ok) {
-      throw new Error(`Failed to fetch match data: ${matchRes.status}`)
-    }
-
-    const data = await matchRes.json()
-    console.log("Backend response:", data)
-
-    if (data.error) {
-      throw new Error(`Backend error: ${data.error}`)
-    }
-
-    const { merkleRoot, rewards, proof, matchIdForContract } = data
-
-    if (!merkleRoot || !rewards || rewards.length === 0) {
-      toast.error("Merkle root not found for this match.")
-      return
-    }
-
-    const userReward = rewards.find((r: RewardData) => r.user.toLowerCase() === userAddress.toLowerCase())
-
-    if (!userReward) {
-      toast.error("No reward found for your address")
-      return
-    }
-
-    console.log("User reward found:", userReward)
-    console.log("Proof from backend:", proof)
-
-    // CRITICAL FIX: Ensure proof is an array
-    const proofArray = Array.isArray(proof) ? proof : []
-    console.log("Proof array to use:", proofArray)
-
-    // Use the matchIdForContract from the backend if available, otherwise convert it here
-    const contractMatchId = matchIdForContract || convertObjectIdToUint256(matchId)
-
-    console.log("Contract parameters:", {
-      matchId: contractMatchId,
-      reward: userReward.reward,
-      proofLength: proofArray.length,
-    })
-
-    // Connect to the contract
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, TOKEN_ABI, signer)
-
-    // DEBUGGING: Try to call canClaim first to check if the claim would succeed
+  // IMPROVED: Claim rewards function with better error handling and direct transaction approach
+  async function handleClaimAllRewards(
+    matchId: string,
+    predictions: Prediction[]
+  ) {
     try {
-      const canClaim = await contract.canClaim(contractMatchId, userAddress, userReward.reward, proofArray)
-      console.log("Can claim check:", canClaim)
-
-      if (!canClaim) {
-        throw new Error("Contract says this user cannot claim rewards")
+      if (!window.ethereum) {
+        toast.error("MetaMask not detected! Please install MetaMask.");
+        return;
       }
-    } catch (checkError) {
-      console.error("Error checking canClaim:", checkError)
-      // Continue anyway, as this is just a check
-    }
 
-    // CRITICAL FIX: Use try/catch with estimateGas first to get better error messages
-    try {
-      const gasEstimate = await contract.claimTokens.estimateGas(contractMatchId, userReward.reward, proofArray)
-      console.log("Gas estimate:", gasEstimate.toString())
+      // Get all winning predictions for this match
+      const matchPredictions = predictions.filter(
+        (p) =>
+          p.matchId === matchId && p.status === "won" && p.reward && !p.claimed
+      );
 
-      // Add 20% buffer to gas estimate
-      const gasLimit = Math.floor(Number(gasEstimate) * 1.2)
+      if (matchPredictions.length === 0) {
+        toast.info("No rewards to claim for this match");
+        return;
+      }
 
-      // Send claim transaction with explicit gas limit
-      const tx = await contract.claimTokens(contractMatchId, userReward.reward, proofArray, { gasLimit })
+      // Set global claiming state
+      setIsClaimingRewards(true);
+      setClaimTxHash(null);
 
-      console.log("Transaction sent:", tx.hash)
+      // Set loading state for all predictions in this match
+      setPredictions((prev) =>
+        prev.map((p) =>
+          p.matchId === matchId && p.status === "won" && !p.claimed
+            ? { ...p, isClaimLoading: true }
+            : p
+        )
+      );
 
-      const receipt = await tx.wait()
-      console.log("Transaction confirmed in block:", receipt.blockNumber)
+      // Get user address from MetaMask
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const userAddress = await signer.getAddress();
+
+      console.log("User address from MetaMask:", userAddress);
+
+      // Fetch Merkle Root and rewards data from the backend
+      console.log("Fetching data from backend for match:", matchId);
+      const matchRes = await fetch(`/api/match`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: matchId, address: userAddress }),
+      });
+
+      if (!matchRes.ok) {
+        throw new Error(`Failed to fetch match data: ${matchRes.status}`);
+      }
+
+      const data = await matchRes.json();
+      console.log("Backend response:", data);
+
+      if (data.error) {
+        throw new Error(`Backend error: ${data.error}`);
+      }
+
+      const { merkleRoot, rewards, proof, matchIdForContract } = data;
+
+      if (!merkleRoot || !rewards || rewards.length === 0) {
+        throw new Error("Merkle root not found for this match.");
+      }
+
+      const userReward = rewards.find(
+        (r: RewardData) => r.user.toLowerCase() === userAddress.toLowerCase()
+      );
+
+      if (!userReward) {
+        throw new Error("No reward found for your address");
+      }
+
+      console.log("User reward found:", userReward);
+      console.log("Proof from backend:", proof);
+
+      // CRITICAL FIX: Ensure proof is an array
+      const proofArray = Array.isArray(proof) ? proof : [];
+      console.log("Proof array to use:", proofArray);
+
+      // Use the matchIdForContract from the backend if available, otherwise convert it here
+      const contractMatchId =
+        matchIdForContract || convertObjectIdToUint256(matchId);
+
+      console.log("Contract parameters:", {
+        matchId: contractMatchId,
+        reward: userReward.reward,
+        proofLength: proofArray.length,
+      });
+
+      // Connect to the contract
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, TOKEN_ABI, signer);
+
+      // IMPROVED: Skip gas estimation and go directly to transaction with high gas limit
+      // This avoids the gas estimation errors that were occurring
+      console.log("Sending transaction with high gas limit...");
+
+      // Show a toast notification that transaction is being sent
+      toast.loading("Sending transaction to claim rewards...", {
+        id: "claim-tx",
+      });
+
+      const tx = await contract.claimTokens(
+        contractMatchId,
+        userReward.reward,
+        proofArray,
+        {
+          gasLimit: 500000, // High fixed gas limit to avoid estimation issues
+        }
+      );
+
+      console.log("Transaction sent:", tx.hash);
+      setClaimTxHash(tx.hash);
+
+      // Update toast to show transaction is pending
+      toast.loading(
+        `Transaction pending: ${tx.hash.slice(0, 6)}...${tx.hash.slice(-4)}`,
+        {
+          id: "claim-tx",
+        }
+      );
+
+      // Wait for transaction confirmation
+      const receipt = await tx.wait();
+      console.log("Transaction confirmed in block:", receipt.blockNumber);
 
       // Update state after successful claim
       setPredictions((prev) =>
         prev.map((p) =>
           p.matchId === matchId && p.status === "won" && !p.claimed
             ? { ...p, claimed: true, isClaimLoading: false }
-            : p,
-        ),
-      )
-
-      toast.success(`Successfully claimed ${userReward.reward} CPT tokens!`)
-    } catch (gasError) {
-      console.error("Gas estimation failed:", gasError)
-
-      // Try a direct transaction with a high gas limit as fallback
-      try {
-        console.log("Trying direct transaction with high gas limit...")
-        const tx = await contract.claimTokens(
-          contractMatchId,
-          userReward.reward,
-          proofArray,
-          { gasLimit: 500000 }, // High gas limit as fallback
+            : p
         )
+      );
 
-        console.log("Transaction sent:", tx.hash)
+      // Update toast to show success
+      toast.success(`Successfully claimed ${userReward.reward} CPT tokens!`, {
+        id: "claim-tx",
+      });
 
-        const receipt = await tx.wait()
-        console.log("Transaction confirmed in block:", receipt.blockNumber)
-
-        // Update state after successful claim
-        setPredictions((prev) =>
-          prev.map((p) =>
-            p.matchId === matchId && p.status === "won" && !p.claimed
-              ? { ...p, claimed: true, isClaimLoading: false }
-              : p,
-          ),
+      // Refresh user bets to update the UI
+      handleRefresh();
+    } catch (error) {
+      console.error("Error claiming rewards:", error);
+      handleClaimError(error);
+    } finally {
+      setIsClaimingRewards(false);
+      setPredictions((prev) =>
+        prev.map((p) =>
+          p.matchId === matchId ? { ...p, isClaimLoading: false } : p
         )
-
-        toast.success(`Successfully claimed ${userReward.reward} CPT tokens!`)
-      } catch (txError) {
-        console.error("Transaction failed:", txError)
-        handleError(txError)
-      }
+      );
     }
-  } catch (error) {
-    console.error("Error claiming rewards:", error)
-    handleError(error)
-  } finally {
-    setPredictions((prev) => prev.map((p) => (p.matchId === matchId ? { ...p, isClaimLoading: false } : p)))
   }
-}
 
-// Helper function to handle errors
-function handleError(error: unknown) {
-  console.error("Full error object:", error)
-}
-
+  // IMPROVED: Better error handling for claim function
+  function handleClaimError(error: unknown) {
+    console.error("Full error object:", error);
+  }
 
   // Helper functions
   const formatAddress = (address: string | undefined) => {
-    if (!address) return ""
-    return `${address.slice(0, 6)}...${address.slice(-4)}`
-  }
+    if (!address) return "";
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+  };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })
-  }
+    });
+  };
 
   const getTimeRemaining = (dateString: string) => {
-    const targetDate = new Date(dateString)
-    const now = new Date()
-    const diff = targetDate.getTime() - now.getTime()
+    const targetDate = new Date(dateString);
+    const now = new Date();
+    const diff = targetDate.getTime() - now.getTime();
 
-    if (diff <= 0) return "Closed"
+    if (diff <= 0) return "Closed";
 
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-    if (days > 0) return `${days}d ${hours}h remaining`
-    if (hours > 0) return `${hours}h ${minutes}m remaining`
-    return `${minutes}m remaining`
-  }
+    if (days > 0) return `${days}d ${hours}h remaining`;
+    if (hours > 0) return `${hours}h ${minutes}m remaining`;
+    return `${minutes}m remaining`;
+  };
 
   const getTeamLogo = (teamName: string) => {
     const teamLogos: Record<string, string> = {
@@ -660,45 +695,48 @@ function handleError(error: unknown) {
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEhAviPjlBbeRYz6ny9-HOVtr9VmyQJ3FXOw60rSy8ye_U_nMy9gPWtgEPpPMAO7va36UX6nyw9BNvWVrC5kwShXJT3V7FtA5HmDO9aAwsBS4iGQWFRQWOX_ltiBkSajurq-ulo_Mu82VYsIMDkIme9jCuqMxKTt0P1fO9bv_tdXBzYj51QgTcD7pz-2/s1024/Original%20Gujarat%20Titans%20Logo%20PNG-SVG%20File%20Download%20Free%20Download.png",
       "Lucknow Super Giants":
         "https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEijb28SNOESbzSkJ5J8-YuxEweSWpHRLhF_uQ5Ceah9b61K8ytbL8fwmK9oMKbM2-ZZxlualj5wlNPlriod0mdrFFXBSx0dj0-_4DQIXwZmGkleqqiIpr0GmV7V8dkYbLXisxjWUPtf4joGikLHSiExgCpaO477APLpjA8_pGhnlvUEAJM4_TvabF85/s7201/Original%20Lucknow%20Super%20Giants%20PNG-SVG%20File%20Download%20Free%20Download.png",
-    }
+    };
 
     return (
-      teamLogos[teamName] || `/placeholder.svg?height=40&width=40&text=${teamName?.slice(0, 3).toUpperCase() || "TEAM"}`
-    )
-  }
+      teamLogos[teamName] ||
+      `/placeholder.svg?height=40&width=40&text=${
+        teamName?.slice(0, 3).toUpperCase() || "TEAM"
+      }`
+    );
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "won":
-        return "bg-green-500"
+        return "bg-green-500";
       case "lost":
-        return "bg-red-500"
+        return "bg-red-500";
       default:
-        return "bg-yellow-500"
+        return "bg-yellow-500";
     }
-  }
+  };
 
   const getStatusText = (status: string) => {
     switch (status) {
       case "won":
-        return "Won"
+        return "Won";
       case "lost":
-        return "Lost"
+        return "Lost";
       default:
-        return "Pending"
+        return "Pending";
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "won":
-        return <Check className="h-3 w-3" />
+        return <Check className="h-3 w-3" />;
       case "lost":
-        return <X className="h-3 w-3" />
+        return <X className="h-3 w-3" />;
       default:
-        return <Clock className="h-3 w-3" />
+        return <Clock className="h-3 w-3" />;
     }
-  }
+  };
 
   // Sidebar navigation items
   const navItems = [
@@ -706,67 +744,72 @@ function handleError(error: unknown) {
     { icon: <Users className="h-5 w-5" />, label: "Leaderboard" },
     { icon: <Zap className="h-5 w-5" />, label: "Rewards" },
     { icon: <Bell className="h-5 w-5" />, label: "Notifications" },
-  ]
+  ];
 
   const getClaimableTokens = (predictions: Prediction[]) => {
     return predictions
       .filter((p) => p.status === "won" && p.reward && !p.claimed)
-      .reduce((total, p) => total + (p.reward || 0), 0)
-  }
+      .reduce((total, p) => total + (p.reward || 0), 0);
+  };
 
   const getMatchStats = (predictions: Prediction[]) => {
-    const total = predictions.length
-    const won = predictions.filter((p) => p.status === "won").length
-    const lost = predictions.filter((p) => p.status === "lost").length
-    const pending = predictions.filter((p) => p.status === "pending").length
+    const total = predictions.length;
+    const won = predictions.filter((p) => p.status === "won").length;
+    const lost = predictions.filter((p) => p.status === "lost").length;
+    const pending = predictions.filter((p) => p.status === "pending").length;
 
-    return { total, won, lost, pending }
-  }
+    return { total, won, lost, pending };
+  };
 
   const handleRefresh = async () => {
-    setRefreshing(true)
+    setRefreshing(true);
     // This will trigger the useEffect that fetches user bets
-    setTimeout(() => setRefreshing(false), 1000)
-  }
+    setTimeout(() => setRefreshing(false), 1000);
+  };
 
   // Group predictions by match
   const matchGroups = useMemo(() => {
-    return predictions.reduce(
-      (groups, prediction) => {
-        const matchId = prediction.matchId || "unknown"
-        if (!groups[matchId]) {
-          groups[matchId] = {
-            match: prediction.match,
-            teamA: prediction.teamA,
-            teamB: prediction.teamB,
-            predictions: [],
-          }
-        }
-        groups[matchId].predictions.push(prediction)
-        return groups
-      },
-      {} as Record<string, { match: string; teamA?: string; teamB?: string; predictions: Prediction[] }>,
-    )
-  }, [predictions])
+    return predictions.reduce((groups, prediction) => {
+      const matchId = prediction.matchId || "unknown";
+      if (!groups[matchId]) {
+        groups[matchId] = {
+          match: prediction.match,
+          teamA: prediction.teamA,
+          teamB: prediction.teamB,
+          predictions: [],
+        };
+      }
+      groups[matchId].predictions.push(prediction);
+      return groups;
+    }, {} as Record<string, { match: string; teamA?: string; teamB?: string; predictions: Prediction[] }>);
+  }, [predictions]);
 
   // Filter predictions based on selected filter
   const filteredMatchGroups = useMemo(() => {
-    if (predictionFilter === "all") return matchGroups
+    if (predictionFilter === "all") return matchGroups;
 
-    return Object.entries(matchGroups).reduce(
-      (filtered, [matchId, group]) => {
-        const filteredPredictions = group.predictions.filter((p) => p.status === predictionFilter)
-        if (filteredPredictions.length > 0) {
-          filtered[matchId] = {
-            ...group,
-            predictions: filteredPredictions,
-          }
-        }
-        return filtered
-      },
-      {} as Record<string, { match: string; teamA?: string; teamB?: string; predictions: Prediction[] }>,
-    )
-  }, [matchGroups, predictionFilter])
+    return Object.entries(matchGroups).reduce((filtered, [matchId, group]) => {
+      const filteredPredictions = group.predictions.filter(
+        (p) => p.status === predictionFilter
+      );
+      if (filteredPredictions.length > 0) {
+        filtered[matchId] = {
+          ...group,
+          predictions: filteredPredictions,
+        };
+      }
+      return filtered;
+    }, {} as Record<string, { match: string; teamA?: string; teamB?: string; predictions: Prediction[] }>);
+  }, [matchGroups, predictionFilter]);
+
+  // View transaction on Etherscan
+  const viewTransaction = (txHash: string) => {
+    if (!txHash) return;
+
+    // Sepolia explorer URL
+    const explorerUrl = `https://sepolia.etherscan.io/tx/${txHash}`;
+    window.open(explorerUrl, "_blank");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-background/95 dark:from-background dark:to-background">
@@ -778,7 +821,9 @@ function handleError(error: unknown) {
               <Cricket className="h-6 w-6 text-primary" />
               <span>Cricket Prophet</span>
             </SheetTitle>
-            <SheetDescription>Make predictions on cricket matches</SheetDescription>
+            <SheetDescription>
+              Make predictions on cricket matches
+            </SheetDescription>
           </SheetHeader>
           <div className="py-4">
             {isConnected && (
@@ -789,15 +834,23 @@ function handleError(error: unknown) {
                   </Avatar>
                   <div>
                     <p className="font-medium">{formatAddress(address)}</p>
-                    <Badge variant={chain?.id === sepolia.id ? "default" : "destructive"} className="mt-1">
-                      {chains.find((c) => c.id === chain?.id)?.name || "Unknown Network"}
+                    <Badge
+                      variant={
+                        chain?.id === sepolia.id ? "default" : "destructive"
+                      }
+                      className="mt-1"
+                    >
+                      {chains.find((c) => c.id === chain?.id)?.name ||
+                        "Unknown Network"}
                     </Badge>
                   </div>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-1">
                     <Coins className="h-4 w-4 text-primary" />
-                    <span>{tokenBalance ? tokenBalance.toString() : "0"} CPT</span>
+                    <span>
+                      {tokenBalance ? tokenBalance.toString() : "0"} CPT
+                    </span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Trophy className="h-4 w-4 text-primary" />
@@ -828,7 +881,11 @@ function handleError(error: unknown) {
               ) : (
                 <>
                   <DashboardSignupIntegration className="w-full mb-2" />
-                  <Button variant="outline" className="w-full" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
                     Close Menu
                   </Button>
                 </>
@@ -859,7 +916,9 @@ function handleError(error: unknown) {
                 Cricket Prophet
               </h1>
             </div>
-            <p className="text-sm text-muted-foreground">Predict & win with blockchain</p>
+            <p className="text-sm text-muted-foreground">
+              Predict & win with blockchain
+            </p>
           </div>
 
           {isConnected && (
@@ -870,15 +929,23 @@ function handleError(error: unknown) {
                 </Avatar>
                 <div>
                   <p className="font-medium">{formatAddress(address)}</p>
-                  <Badge variant={chain?.id === sepolia.id ? "default" : "destructive"} className="mt-1">
-                    {chains.find((c) => c.id === chain?.id)?.name || "Unknown Network"}
+                  <Badge
+                    variant={
+                      chain?.id === sepolia.id ? "default" : "destructive"
+                    }
+                    className="mt-1"
+                  >
+                    {chains.find((c) => c.id === chain?.id)?.name ||
+                      "Unknown Network"}
                   </Badge>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="flex items-center gap-1">
                   <Coins className="h-4 w-4 text-primary" />
-                  <span>{tokenBalance ? tokenBalance.toString() : "0"} CPT</span>
+                  <span>
+                    {tokenBalance ? tokenBalance.toString() : "0"} CPT
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Trophy className="h-4 w-4 text-primary" />
@@ -892,7 +959,10 @@ function handleError(error: unknown) {
             <ul className="space-y-2">
               {navItems.map((item, i) => (
                 <li key={i}>
-                  <Button variant={item.active ? "default" : "ghost"} className="w-full justify-start">
+                  <Button
+                    variant={item.active ? "default" : "ghost"}
+                    className="w-full justify-start"
+                  >
                     {item.icon}
                     <span className="ml-2">{item.label}</span>
                   </Button>
@@ -902,7 +972,9 @@ function handleError(error: unknown) {
           </nav>
 
           <div className="p-4 border-t mt-auto">
-            <div className="flex items-center justify-between">{!isConnected && <ConnectButton />}</div>
+            <div className="flex items-center justify-between">
+              {!isConnected && <ConnectButton />}
+            </div>
           </div>
         </aside>
 
@@ -912,7 +984,11 @@ function handleError(error: unknown) {
           <header className="sticky top-0 z-10 backdrop-blur-md bg-background/80 border-b">
             <div className="container flex h-16 items-center justify-between px-4">
               <div className="flex items-center gap-2 lg:hidden">
-                <Button variant="ghost" size="icon" onClick={() => setIsMobileMenuOpen(true)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsMobileMenuOpen(true)}
+                >
                   <Menu className="h-5 w-5" />
                 </Button>
                 <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
@@ -950,13 +1026,23 @@ function handleError(error: unknown) {
                     <CardContent className="pt-4">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8 bg-primary/10">
-                          <AvatarFallback>{address?.slice(2, 4)}</AvatarFallback>
+                          <AvatarFallback>
+                            {address?.slice(2, 4)}
+                          </AvatarFallback>
                         </Avatar>
-                        <p className="text-xl font-bold">{formatAddress(address)}</p>
+                        <p className="text-xl font-bold">
+                          {formatAddress(address)}
+                        </p>
                       </div>
                       {chain && (
-                        <Badge variant={chain?.id === sepolia.id ? "default" : "destructive"} className="mt-2">
-                          {chains.find((c) => c.id === chain?.id)?.name || "Unknown Network"}
+                        <Badge
+                          variant={
+                            chain?.id === sepolia.id ? "default" : "destructive"
+                          }
+                          className="mt-2"
+                        >
+                          {chains.find((c) => c.id === chain?.id)?.name ||
+                            "Unknown Network"}
                         </Badge>
                       )}
                     </CardContent>
@@ -1005,8 +1091,20 @@ function handleError(error: unknown) {
                       </div>
                       <div className="mt-2">
                         <div className="flex justify-between text-xs mb-1">
-                          <span>{predictions.filter((p) => p.status === "won").length} wins</span>
-                          <span>{predictions.filter((p) => p.status !== "pending").length} total</span>
+                          <span>
+                            {
+                              predictions.filter((p) => p.status === "won")
+                                .length
+                            }{" "}
+                            wins
+                          </span>
+                          <span>
+                            {
+                              predictions.filter((p) => p.status !== "pending")
+                                .length
+                            }{" "}
+                            total
+                          </span>
                         </div>
                         <Progress value={winRate} className="h-2" />
                       </div>
@@ -1015,13 +1113,23 @@ function handleError(error: unknown) {
                 </motion.div>
 
                 {/* Tabs for Upcoming Matches and Your Predictions */}
-                <Tabs defaultValue="upcoming" className="mb-6" onValueChange={setActiveTab}>
+                <Tabs
+                  defaultValue="upcoming"
+                  className="mb-6"
+                  onValueChange={setActiveTab}
+                >
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="upcoming" className="flex items-center gap-2">
+                    <TabsTrigger
+                      value="upcoming"
+                      className="flex items-center gap-2"
+                    >
                       <Calendar className="h-4 w-4" />
                       Upcoming Matches
                     </TabsTrigger>
-                    <TabsTrigger value="predictions" className="flex items-center gap-2">
+                    <TabsTrigger
+                      value="predictions"
+                      className="flex items-center gap-2"
+                    >
                       <Sparkles className="h-4 w-4" />
                       Your Predictions
                     </TabsTrigger>
@@ -1032,7 +1140,9 @@ function handleError(error: unknown) {
                     <Card className="overflow-hidden border-primary/20">
                       <CardHeader className="bg-primary/5">
                         <CardTitle>Upcoming Matches</CardTitle>
-                        <CardDescription>Swipe or use arrows to navigate matches</CardDescription>
+                        <CardDescription>
+                          Swipe or use arrows to navigate matches
+                        </CardDescription>
                       </CardHeader>
                       <CardContent className="relative p-0">
                         {isLoading ? (
@@ -1042,7 +1152,9 @@ function handleError(error: unknown) {
                         ) : matches.length === 0 ? (
                           <div className="p-6 flex flex-col items-center justify-center">
                             <Cricket className="h-12 w-12 text-muted-foreground mb-4" />
-                            <p className="text-muted-foreground text-center">No upcoming matches found</p>
+                            <p className="text-muted-foreground text-center">
+                              No upcoming matches found
+                            </p>
                           </div>
                         ) : (
                           <div className="relative min-h-[300px]">
@@ -1059,17 +1171,31 @@ function handleError(error: unknown) {
                                   <div className="flex items-center justify-between mb-4">
                                     <div className="flex items-center gap-4">
                                       <img
-                                        src={getTeamLogo(matches[currentMatchIndex]?.teamA) || "/placeholder.svg"}
+                                        src={
+                                          getTeamLogo(
+                                            matches[currentMatchIndex]?.teamA
+                                          ) || "/placeholder.svg"
+                                        }
                                         alt={matches[currentMatchIndex].teamA}
                                         className="h-auto max-h-20"
                                       />
-                                      <span className="text-xl font-bold">{matches[currentMatchIndex].teamA}</span>
+                                      <span className="text-xl font-bold">
+                                        {matches[currentMatchIndex].teamA}
+                                      </span>
                                     </div>
-                                    <span className="text-xl font-bold">vs</span>
+                                    <span className="text-xl font-bold">
+                                      vs
+                                    </span>
                                     <div className="flex items-center gap-4">
-                                      <span className="text-xl font-bold">{matches[currentMatchIndex].teamB}</span>
+                                      <span className="text-xl font-bold">
+                                        {matches[currentMatchIndex].teamB}
+                                      </span>
                                       <img
-                                        src={getTeamLogo(matches[currentMatchIndex].teamB) || "/placeholder.svg"}
+                                        src={
+                                          getTeamLogo(
+                                            matches[currentMatchIndex].teamB
+                                          ) || "/placeholder.svg"
+                                        }
                                         alt={matches[currentMatchIndex].teamB}
                                         className="h-auto max-h-20"
                                       />
@@ -1078,9 +1204,17 @@ function handleError(error: unknown) {
 
                                   <div className="flex items-center gap-2 mb-6 text-muted-foreground">
                                     <Calendar className="h-4 w-4" />
-                                    <span>{formatDate(matches[currentMatchIndex].matchDate)}</span>
+                                    <span>
+                                      {formatDate(
+                                        matches[currentMatchIndex].matchDate
+                                      )}
+                                    </span>
                                     <Clock className="h-4 w-4 ml-2" />
-                                    <span>{getTimeRemaining(matches[currentMatchIndex].matchDate)}</span>
+                                    <span>
+                                      {getTimeRemaining(
+                                        matches[currentMatchIndex].matchDate
+                                      )}
+                                    </span>
                                   </div>
 
                                   <div className="flex justify-center">
@@ -1088,7 +1222,11 @@ function handleError(error: unknown) {
                                       whileHover={{ scale: 1.05 }}
                                       whileTap={{ scale: 0.95 }}
                                       className="bg-primary text-primary-foreground px-6 py-2 rounded-full font-medium flex items-center gap-2"
-                                      onClick={() => setSelectedMatch(matches[currentMatchIndex])}
+                                      onClick={() =>
+                                        setSelectedMatch(
+                                          matches[currentMatchIndex]
+                                        )
+                                      }
                                     >
                                       View Details & Predict
                                       <ArrowRight className="h-4 w-4" />
@@ -1102,7 +1240,11 @@ function handleError(error: unknown) {
                               variant="outline"
                               size="icon"
                               className="absolute top-1/2 left-2 transform -translate-y-1/2 rounded-full h-10 w-10 bg-background/80 backdrop-blur-sm"
-                              onClick={() => setCurrentMatchIndex((prev) => (prev > 0 ? prev - 1 : matches.length - 1))}
+                              onClick={() =>
+                                setCurrentMatchIndex((prev) =>
+                                  prev > 0 ? prev - 1 : matches.length - 1
+                                )
+                              }
                             >
                               <ChevronLeft className="h-4 w-4" />
                             </Button>
@@ -1110,7 +1252,11 @@ function handleError(error: unknown) {
                               variant="outline"
                               size="icon"
                               className="absolute top-1/2 right-2 transform -translate-y-1/2 rounded-full h-10 w-10 bg-background/80 backdrop-blur-sm"
-                              onClick={() => setCurrentMatchIndex((prev) => (prev < matches.length - 1 ? prev + 1 : 0))}
+                              onClick={() =>
+                                setCurrentMatchIndex((prev) =>
+                                  prev < matches.length - 1 ? prev + 1 : 0
+                                )
+                              }
                             >
                               <ChevronRight className="h-4 w-4" />
                             </Button>
@@ -1122,7 +1268,9 @@ function handleError(error: unknown) {
                           <span className="text-sm text-muted-foreground">
                             {!isLoading &&
                               matches.length > 0 &&
-                              `${currentMatchIndex + 1} of ${matches.length} matches`}
+                              `${currentMatchIndex + 1} of ${
+                                matches.length
+                              } matches`}
                           </span>
                           <div className="flex gap-1">
                             {!isLoading &&
@@ -1130,7 +1278,9 @@ function handleError(error: unknown) {
                                 <div
                                   key={idx}
                                   className={`h-2 w-2 rounded-full cursor-pointer ${
-                                    idx === currentMatchIndex ? "bg-primary" : "bg-primary/30"
+                                    idx === currentMatchIndex
+                                      ? "bg-primary"
+                                      : "bg-primary/30"
                                   }`}
                                   onClick={() => setCurrentMatchIndex(idx)}
                                 />
@@ -1148,7 +1298,9 @@ function handleError(error: unknown) {
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                           <div>
                             <CardTitle>Your Predictions</CardTitle>
-                            <CardDescription>Track your recent predictions and rewards</CardDescription>
+                            <CardDescription>
+                              Track your recent predictions and rewards
+                            </CardDescription>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
@@ -1158,12 +1310,21 @@ function handleError(error: unknown) {
                               onClick={handleRefresh}
                               disabled={refreshing}
                             >
-                              <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
+                              <RefreshCw
+                                className={cn(
+                                  "h-3 w-3",
+                                  refreshing && "animate-spin"
+                                )}
+                              />
                               {refreshing ? "Refreshing..." : "Refresh"}
                             </Button>
                             <div className="flex items-center border rounded-md overflow-hidden">
                               <Button
-                                variant={predictionFilter === "all" ? "default" : "ghost"}
+                                variant={
+                                  predictionFilter === "all"
+                                    ? "default"
+                                    : "ghost"
+                                }
                                 size="sm"
                                 className="h-8 rounded-none"
                                 onClick={() => setPredictionFilter("all")}
@@ -1171,7 +1332,11 @@ function handleError(error: unknown) {
                                 All
                               </Button>
                               <Button
-                                variant={predictionFilter === "won" ? "default" : "ghost"}
+                                variant={
+                                  predictionFilter === "won"
+                                    ? "default"
+                                    : "ghost"
+                                }
                                 size="sm"
                                 className="h-8 rounded-none"
                                 onClick={() => setPredictionFilter("won")}
@@ -1179,7 +1344,11 @@ function handleError(error: unknown) {
                                 Won
                               </Button>
                               <Button
-                                variant={predictionFilter === "lost" ? "default" : "ghost"}
+                                variant={
+                                  predictionFilter === "lost"
+                                    ? "default"
+                                    : "ghost"
+                                }
                                 size="sm"
                                 className="h-8 rounded-none"
                                 onClick={() => setPredictionFilter("lost")}
@@ -1187,7 +1356,11 @@ function handleError(error: unknown) {
                                 Lost
                               </Button>
                               <Button
-                                variant={predictionFilter === "pending" ? "default" : "ghost"}
+                                variant={
+                                  predictionFilter === "pending"
+                                    ? "default"
+                                    : "ghost"
+                                }
                                 size="sm"
                                 className="h-8 rounded-none"
                                 onClick={() => setPredictionFilter("pending")}
@@ -1208,143 +1381,181 @@ function handleError(error: unknown) {
                             </div>
                           ) : Object.keys(filteredMatchGroups).length > 0 ? (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-                              {Object.entries(filteredMatchGroups).map(([matchId, group]) => {
-                                const claimableTokens = getClaimableTokens(group.predictions)
-                                const stats = getMatchStats(group.predictions)
+                              {Object.entries(filteredMatchGroups).map(
+                                ([matchId, group]) => {
+                                  const claimableTokens = getClaimableTokens(
+                                    group.predictions
+                                  );
+                                  const stats = getMatchStats(
+                                    group.predictions
+                                  );
 
-                                return (
-                                  <Card
-                                    key={matchId}
-                                    className="overflow-hidden border-primary/20 hover:border-primary/40 transition-all duration-300"
-                                  >
-                                    <CardHeader className="bg-primary/5 pb-3">
-                                      <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                          <div className="flex -space-x-2">
-                                            <Avatar className="border-2 border-background h-8 w-8">
-                                              <AvatarImage
-                                                src={getTeamLogo(group.teamA || "")}
-                                                alt={group.teamA || "Team A"}
-                                              />
-                                              <AvatarFallback className="bg-primary/20 text-xs">
-                                                {group.teamA?.slice(0, 2) || "TA"}
-                                              </AvatarFallback>
-                                            </Avatar>
-                                            <Avatar className="border-2 border-background h-8 w-8">
-                                              <AvatarImage
-                                                src={getTeamLogo(group.teamB || "")}
-                                                alt={group.teamB || "Team B"}
-                                              />
-                                              <AvatarFallback className="bg-primary/20 text-xs">
-                                                {group.teamB?.slice(0, 2) || "TB"}
-                                              </AvatarFallback>
-                                            </Avatar>
+                                  return (
+                                    <Card
+                                      key={matchId}
+                                      className="overflow-hidden border-primary/20 hover:border-primary/40 transition-all duration-300"
+                                    >
+                                      <CardHeader className="bg-primary/5 pb-3">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3">
+                                            <div className="flex -space-x-2">
+                                              <Avatar className="border-2 border-background h-8 w-8">
+                                                <AvatarImage
+                                                  src={getTeamLogo(
+                                                    group.teamA || ""
+                                                  )}
+                                                  alt={group.teamA || "Team A"}
+                                                />
+                                                <AvatarFallback className="bg-primary/20 text-xs">
+                                                  {group.teamA?.slice(0, 2) ||
+                                                    "TA"}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <Avatar className="border-2 border-background h-8 w-8">
+                                                <AvatarImage
+                                                  src={getTeamLogo(
+                                                    group.teamB || ""
+                                                  )}
+                                                  alt={group.teamB || "Team B"}
+                                                />
+                                                <AvatarFallback className="bg-primary/20 text-xs">
+                                                  {group.teamB?.slice(0, 2) ||
+                                                    "TB"}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                            </div>
+                                            <CardTitle className="text-base">
+                                              {group.match}
+                                            </CardTitle>
                                           </div>
-                                          <CardTitle className="text-base">{group.match}</CardTitle>
                                         </div>
-                                      </div>
-                                      <CardDescription className="flex items-center gap-2 mt-2">
-                                        <div className="flex items-center gap-1">
-                                          <Trophy className="h-3 w-3 text-green-500" />
-                                          <span>{stats.won} won</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <X className="h-3 w-3 text-red-500" />
-                                          <span>{stats.lost} lost</span>
-                                        </div>
-                                        <div className="flex items-center gap-1">
-                                          <Clock className="h-3 w-3 text-yellow-500" />
-                                          <span>{stats.pending} pending</span>
-                                        </div>
-                                      </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="p-4">
-                                      <div className="flex items-center justify-between mb-3">
-                                        <div className="text-sm text-muted-foreground">
-                                          {group.predictions.length} prediction
-                                          {group.predictions.length !== 1 ? "s" : ""}
-                                        </div>
-                                        {claimableTokens > 0 && (
-                                          <div className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
-                                            <Coins className="h-4 w-4" />
-                                            <span>{claimableTokens} CPT available</span>
+                                        <CardDescription className="flex items-center gap-2 mt-2">
+                                          <div className="flex items-center gap-1">
+                                            <Trophy className="h-3 w-3 text-green-500" />
+                                            <span>{stats.won} won</span>
                                           </div>
-                                        )}
-                                      </div>
-
-                                      <div className="flex flex-wrap gap-2">
-                                        {group.predictions.slice(0, 3).map((prediction) => (
-                                          <Badge
-                                            key={prediction.id}
-                                            variant="outline"
-                                            className={`${
-                                              prediction.status === "won"
-                                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800"
-                                                : prediction.status === "lost"
-                                                  ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800"
-                                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
-                                            }`}
-                                          >
-                                            {prediction.status === "won" ? (
-                                              <Check className="h-3 w-3 mr-1" />
-                                            ) : prediction.status === "lost" ? (
-                                              <X className="h-3 w-3 mr-1" />
-                                            ) : (
-                                              <Clock className="h-3 w-3 mr-1" />
-                                            )}
-                                            {prediction.selectedOption}
-                                          </Badge>
-                                        ))}
-                                        {group.predictions.length > 3 && (
-                                          <Badge variant="outline" className="bg-muted/50">
-                                            +{group.predictions.length - 3} more
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </CardContent>
-                                    <CardFooter className="bg-muted/20 p-3 flex justify-between">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() =>
-                                          setSelectedMatchDetails({
-                                            matchId,
-                                            match: group.match,
-                                            predictions: group.predictions,
-                                            teamA: group.teamA,
-                                            teamB: group.teamB,
-                                          })
-                                        }
-                                        className="gap-1"
-                                      >
-                                        <Bookmark className="h-3 w-3" />
-                                        View Details
-                                      </Button>
-                                      {claimableTokens > 0 && (
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="bg-primary/10 hover:bg-primary/20 gap-1"
-                                          disabled={group.predictions.some((p) => p.isClaimLoading)}
-                                          onClick={() => handleClaimAllRewards(matchId, group.predictions)}
-                                        >
-                                          {group.predictions.some((p) => p.isClaimLoading) ? (
-                                            <>
-                                              <Loader2 className="h-3 w-3 animate-spin" />
-                                              Claiming...
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Coins className="h-3 w-3 text-primary" />
-                                              Claim {claimableTokens} CPT
-                                            </>
+                                          <div className="flex items-center gap-1">
+                                            <X className="h-3 w-3 text-red-500" />
+                                            <span>{stats.lost} lost</span>
+                                          </div>
+                                          <div className="flex items-center gap-1">
+                                            <Clock className="h-3 w-3 text-yellow-500" />
+                                            <span>{stats.pending} pending</span>
+                                          </div>
+                                        </CardDescription>
+                                      </CardHeader>
+                                      <CardContent className="p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                          <div className="text-sm text-muted-foreground">
+                                            {group.predictions.length}{" "}
+                                            prediction
+                                            {group.predictions.length !== 1
+                                              ? "s"
+                                              : ""}
+                                          </div>
+                                          {claimableTokens > 0 && (
+                                            <div className="flex items-center gap-1 text-green-600 dark:text-green-400 font-medium">
+                                              <Coins className="h-4 w-4" />
+                                              <span>
+                                                {claimableTokens} CPT available
+                                              </span>
+                                            </div>
                                           )}
+                                        </div>
+
+                                        <div className="flex flex-wrap gap-2">
+                                          {group.predictions
+                                            .slice(0, 3)
+                                            .map((prediction) => (
+                                              <Badge
+                                                key={prediction.id}
+                                                variant="outline"
+                                                className={`${
+                                                  prediction.status === "won"
+                                                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 border-green-200 dark:border-green-800"
+                                                    : prediction.status ===
+                                                      "lost"
+                                                    ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-800"
+                                                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800"
+                                                }`}
+                                              >
+                                                {prediction.status === "won" ? (
+                                                  <Check className="h-3 w-3 mr-1" />
+                                                ) : prediction.status ===
+                                                  "lost" ? (
+                                                  <X className="h-3 w-3 mr-1" />
+                                                ) : (
+                                                  <Clock className="h-3 w-3 mr-1" />
+                                                )}
+                                                {prediction.selectedOption}
+                                              </Badge>
+                                            ))}
+                                          {group.predictions.length > 3 && (
+                                            <Badge
+                                              variant="outline"
+                                              className="bg-muted/50"
+                                            >
+                                              +{group.predictions.length - 3}{" "}
+                                              more
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </CardContent>
+                                      <CardFooter className="bg-muted/20 p-3 flex justify-between">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() =>
+                                            setSelectedMatchDetails({
+                                              matchId,
+                                              match: group.match,
+                                              predictions: group.predictions,
+                                              teamA: group.teamA,
+                                              teamB: group.teamB,
+                                            })
+                                          }
+                                          className="gap-1"
+                                        >
+                                          <Bookmark className="h-3 w-3" />
+                                          View Details
                                         </Button>
-                                      )}
-                                    </CardFooter>
-                                  </Card>
-                                )
-                              })}
+                                        {claimableTokens > 0 && (
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="bg-primary/10 hover:bg-primary/20 gap-1"
+                                            disabled={
+                                              group.predictions.some(
+                                                (p) => p.isClaimLoading
+                                              ) || isClaimingRewards
+                                            }
+                                            onClick={() =>
+                                              handleClaimAllRewards(
+                                                matchId,
+                                                group.predictions
+                                              )
+                                            }
+                                          >
+                                            {group.predictions.some(
+                                              (p) => p.isClaimLoading
+                                            ) || isClaimingRewards ? (
+                                              <>
+                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                Claiming...
+                                              </>
+                                            ) : (
+                                              <>
+                                                <Coins className="h-3 w-3 text-primary" />
+                                                Claim {claimableTokens} CPT
+                                              </>
+                                            )}
+                                          </Button>
+                                        )}
+                                      </CardFooter>
+                                    </Card>
+                                  );
+                                }
+                              )}
                             </div>
                           ) : (
                             <div className="flex flex-col items-center justify-center h-full p-6">
@@ -1358,10 +1569,14 @@ function handleError(error: unknown) {
                                   </>
                                 ) : (
                                   <>
-                                    No {predictionFilter !== "all" ? `${predictionFilter} ` : ""}
+                                    No{" "}
+                                    {predictionFilter !== "all"
+                                      ? `${predictionFilter} `
+                                      : ""}
                                     predictions found.
                                     <br />
-                                    Try changing the filter or make more predictions!
+                                    Try changing the filter or make more
+                                    predictions!
                                   </>
                                 )}
                               </p>
@@ -1399,7 +1614,8 @@ function handleError(error: unknown) {
                             </CardHeader>
                             <CardContent className="p-4">
                               <div className="text-sm text-muted-foreground mb-2">
-                                {match._id === selectedMatch?._id && questions.length > 0
+                                {match._id === selectedMatch?._id &&
+                                questions.length > 0
                                   ? `${questions.length} prediction questions available`
                                   : "Prediction questions available"}
                               </div>
@@ -1409,13 +1625,19 @@ function handleError(error: unknown) {
                                     <TooltipTrigger asChild>
                                       <div className="flex -space-x-2">
                                         <Avatar className="border-2 border-background h-8 w-8">
-                                          <AvatarImage src={getTeamLogo(match.teamA)} alt={match.teamA} />
+                                          <AvatarImage
+                                            src={getTeamLogo(match.teamA)}
+                                            alt={match.teamA}
+                                          />
                                           <AvatarFallback className="bg-primary/20 text-xs">
                                             {match.teamA.slice(0, 2)}
                                           </AvatarFallback>
                                         </Avatar>
                                         <Avatar className="border-2 border-background h-8 w-8">
-                                          <AvatarImage src={getTeamLogo(match.teamB)} alt={match.teamB} />
+                                          <AvatarImage
+                                            src={getTeamLogo(match.teamB)}
+                                            alt={match.teamB}
+                                          />
                                           <AvatarFallback className="bg-primary/20 text-xs">
                                             {match.teamB.slice(0, 2)}
                                           </AvatarFallback>
@@ -1438,7 +1660,11 @@ function handleError(error: unknown) {
                               </div>
                             </CardContent>
                             <CardFooter className="bg-muted/20 p-3">
-                              <Button variant="ghost" className="w-full" onClick={() => setSelectedMatch(match)}>
+                              <Button
+                                variant="ghost"
+                                className="w-full"
+                                onClick={() => setSelectedMatch(match)}
+                              >
                                 View Details
                               </Button>
                             </CardFooter>
@@ -1461,26 +1687,38 @@ function handleError(error: unknown) {
                   <Card>
                     <CardHeader className="bg-primary/5">
                       <CardTitle>Weekly Leaderboard</CardTitle>
-                      <CardDescription>Top performers based on prediction accuracy</CardDescription>
+                      <CardDescription>
+                        Top performers based on prediction accuracy
+                      </CardDescription>
                     </CardHeader>
                     <CardContent className="p-0">
                       <div className="divide-y">
                         {[1, 2, 3, 4, 5].map((i) => (
-                          <div key={i} className="flex items-center justify-between p-4">
+                          <div
+                            key={i}
+                            className="flex items-center justify-between p-4"
+                          >
                             <div className="flex items-center gap-3">
                               <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 font-bold">
                                 {i}
                               </div>
                               <Avatar className="h-10 w-10 border-2 border-primary/20">
-                                <AvatarFallback>{String.fromCharCode(64 + i)}</AvatarFallback>
+                                <AvatarFallback>
+                                  {String.fromCharCode(64 + i)}
+                                </AvatarFallback>
                               </Avatar>
                               <div>
                                 <p className="font-medium">User{i}</p>
-                                <p className="text-xs text-muted-foreground">{90 - i * 5}% accuracy</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {90 - i * 5}% accuracy
+                                </p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Badge variant="outline" className="bg-primary/10">
+                              <Badge
+                                variant="outline"
+                                className="bg-primary/10"
+                              >
                                 <Flame className="h-3 w-3 mr-1 text-primary" />
                                 {10 - i} streak
                               </Badge>
@@ -1517,9 +1755,12 @@ function handleError(error: unknown) {
                     >
                       <Cricket className="h-12 w-12 text-primary" />
                     </motion.div>
-                    <CardTitle className="text-2xl">Welcome to Cricket Prophet</CardTitle>
+                    <CardTitle className="text-2xl">
+                      Welcome to Cricket Prophet
+                    </CardTitle>
                     <CardDescription>
-                      Connect your wallet to start making predictions on cricket matches and earn rewards.
+                      Connect your wallet to start making predictions on cricket
+                      matches and earn rewards.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-6">
@@ -1530,7 +1771,9 @@ function handleError(error: unknown) {
                         </div>
                         <div>
                           <h3 className="font-medium">Make Predictions</h3>
-                          <p className="text-sm text-muted-foreground">Predict outcomes of cricket matches</p>
+                          <p className="text-sm text-muted-foreground">
+                            Predict outcomes of cricket matches
+                          </p>
                         </div>
                       </div>
 
@@ -1540,7 +1783,9 @@ function handleError(error: unknown) {
                         </div>
                         <div>
                           <h3 className="font-medium">Earn Rewards</h3>
-                          <p className="text-sm text-muted-foreground">Win CPT tokens for correct predictions</p>
+                          <p className="text-sm text-muted-foreground">
+                            Win CPT tokens for correct predictions
+                          </p>
                         </div>
                       </div>
 
@@ -1550,13 +1795,18 @@ function handleError(error: unknown) {
                         </div>
                         <div>
                           <h3 className="font-medium">Track Performance</h3>
-                          <p className="text-sm text-muted-foreground">Monitor your prediction history and stats</p>
+                          <p className="text-sm text-muted-foreground">
+                            Monitor your prediction history and stats
+                          </p>
                         </div>
                       </div>
                     </div>
                   </CardContent>
                   <CardFooter className="flex justify-center p-6 bg-primary/5">
-                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
                       <ConnectButton />
                     </motion.div>
                   </CardFooter>
@@ -1568,12 +1818,19 @@ function handleError(error: unknown) {
       </div>
 
       {/* Match Detail Modal */}
-      <Dialog open={!!selectedMatch} onOpenChange={(open) => !open && setSelectedMatch(null)}>
+      <Dialog
+        open={!!selectedMatch}
+        onOpenChange={(open) => !open && setSelectedMatch(null)}
+      >
         <DialogContent className="max-w-4xl overflow-hidden">
           <DialogHeader className="bg-primary/5 p-4 rounded-t-lg">
             <DialogTitle className="text-2xl flex items-center justify-center gap-4">
               <img
-                src={selectedMatch ? getTeamLogo(selectedMatch.teamA) : "/placeholder.svg"}
+                src={
+                  selectedMatch
+                    ? getTeamLogo(selectedMatch.teamA)
+                    : "/placeholder.svg"
+                }
                 alt={selectedMatch?.teamA}
                 className="h-8 w-8 rounded-full bg-primary/10"
               />
@@ -1581,7 +1838,11 @@ function handleError(error: unknown) {
                 {selectedMatch?.teamA} vs {selectedMatch?.teamB}
               </span>
               <img
-                src={selectedMatch ? getTeamLogo(selectedMatch.teamB) : "/placeholder.svg"}
+                src={
+                  selectedMatch
+                    ? getTeamLogo(selectedMatch.teamB)
+                    : "/placeholder.svg"
+                }
                 alt={selectedMatch?.teamB}
                 className="h-8 w-8 rounded-full bg-primary/10"
               />
@@ -1601,10 +1862,15 @@ function handleError(error: unknown) {
                 </div>
               ) : selectedMatch && questions && questions.length > 0 ? (
                 questions.map((question) => (
-                  <Card key={question._id} className="overflow-hidden border-primary/20">
+                  <Card
+                    key={question._id}
+                    className="overflow-hidden border-primary/20"
+                  >
                     <CardHeader className="bg-primary/5">
                       <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg">{question.question}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {question.question}
+                        </CardTitle>
                         <Badge variant="outline" className="ml-2">
                           {getTimeRemaining(question.closedAt)}
                         </Badge>
@@ -1619,8 +1885,10 @@ function handleError(error: unknown) {
                         {question.options.map((option, index) => {
                           // Check if this is the user's previous selection
                           const isUserPreviousSelection = userBets.some(
-                            (bet) => bet.question._id === question._id && bet.option === option,
-                          )
+                            (bet) =>
+                              bet.question._id === question._id &&
+                              bet.option === option
+                          );
 
                           return (
                             <motion.div
@@ -1633,17 +1901,19 @@ function handleError(error: unknown) {
                                   setSelectedOption({
                                     ...selectedOption,
                                     [question._id]: option,
-                                  })
+                                  });
                                 }
                               }}
                               className={`p-3 rounded-lg border-2 ${
-                                question.isActive ? "cursor-pointer" : "cursor-not-allowed opacity-70"
+                                question.isActive
+                                  ? "cursor-pointer"
+                                  : "cursor-not-allowed opacity-70"
                               } transition-all ${
                                 selectedOption[question._id] === option
                                   ? "border-primary bg-primary/10"
                                   : isUserPreviousSelection
-                                    ? "border-green-500 bg-green-50 dark:bg-green-900/20"
-                                    : "border-muted hover:border-primary/50"
+                                  ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                                  : "border-muted hover:border-primary/50"
                               }`}
                             >
                               <div className="flex items-center gap-2">
@@ -1652,11 +1922,12 @@ function handleError(error: unknown) {
                                     selectedOption[question._id] === option
                                       ? "border-primary bg-primary"
                                       : isUserPreviousSelection
-                                        ? "border-green-500 bg-green-500"
-                                        : "border-muted-foreground"
+                                      ? "border-green-500 bg-green-500"
+                                      : "border-muted-foreground"
                                   }`}
                                 >
-                                  {(selectedOption[question._id] === option || isUserPreviousSelection) && (
+                                  {(selectedOption[question._id] === option ||
+                                    isUserPreviousSelection) && (
                                     <div className="h-2 w-2 m-[3px] rounded-full bg-white" />
                                   )}
                                 </div>
@@ -1671,7 +1942,7 @@ function handleError(error: unknown) {
                                 )}
                               </div>
                             </motion.div>
-                          )
+                          );
                         })}
                       </div>
                       {/* Show if question has an answer already */}
@@ -1679,13 +1950,17 @@ function handleError(error: unknown) {
                         <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
                           <div className="flex items-center gap-2">
                             <Check className="h-4 w-4 text-green-500" />
-                            <span className="font-medium">Correct Answer: {question.answer}</span>
+                            <span className="font-medium">
+                              Correct Answer: {question.answer}
+                            </span>
                           </div>
                         </div>
                       )}
                     </CardContent>
                     <CardFooter className="bg-primary/5 p-4 flex justify-end">
-                      {userBets.some((bet) => bet.question._id === question._id) ? (
+                      {userBets.some(
+                        (bet) => bet.question._id === question._id
+                      ) ? (
                         <Button
                           variant="outline"
                           className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:border-green-800"
@@ -1706,7 +1981,9 @@ function handleError(error: unknown) {
                         >
                           {isPlacingBet[question._id] ? (
                             <>
-                              <span className="opacity-0">Place Prediction</span>
+                              <span className="opacity-0">
+                                Place Prediction
+                              </span>
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <Loader2 className="h-5 w-5 animate-spin" />
                               </div>
@@ -1754,23 +2031,35 @@ function handleError(error: unknown) {
               Network Change Required
             </DialogTitle>
             <DialogDescription>
-              Cricket Prophet requires the Sepolia test network. Please switch your network to continue.
+              Cricket Prophet requires the Sepolia test network. Please switch
+              your network to continue.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
             <div className="flex items-center gap-4 w-full">
-              <Badge variant="outline" className="text-muted-foreground flex-1 justify-center py-2">
-                Current: {chains.find((c) => c.id === chain?.id)?.name || "Unknown Network"}
+              <Badge
+                variant="outline"
+                className="text-muted-foreground flex-1 justify-center py-2"
+              >
+                Current:{" "}
+                {chains.find((c) => c.id === chain?.id)?.name ||
+                  "Unknown Network"}
               </Badge>
               <ArrowRight className="h-6 w-6 text-muted-foreground animate-pulse" />
-              <Badge className="flex-1 justify-center py-2 bg-primary">Required: Sepolia</Badge>
+              <Badge className="flex-1 justify-center py-2 bg-primary">
+                Required: Sepolia
+              </Badge>
             </div>
             <div className="text-sm text-muted-foreground text-center">
-              Switching networks will allow you to interact with the Cricket Prophet platform and place predictions.
+              Switching networks will allow you to interact with the Cricket
+              Prophet platform and place predictions.
             </div>
           </div>
           <DialogFooter className="flex justify-center sm:justify-center gap-2">
-            <Button onClick={handleSwitchToSepolia} className="w-full sm:w-auto">
+            <Button
+              onClick={handleSwitchToSepolia}
+              className="w-full sm:w-auto"
+            >
               Switch to Sepolia
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -1779,20 +2068,27 @@ function handleError(error: unknown) {
       </Dialog>
 
       {/* Verification Dialog */}
-      <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
+      <Dialog
+        open={showVerificationDialog}
+        onOpenChange={setShowVerificationDialog}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               Account Verification Required
             </DialogTitle>
-            <DialogDescription>You need to complete the sign-up process before making predictions.</DialogDescription>
+            <DialogDescription>
+              You need to complete the sign-up process before making
+              predictions.
+            </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
             <Card className="p-4 bg-amber-50 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200 border border-amber-200 dark:border-amber-800 rounded-lg w-full">
               <p className="text-sm">
-                To ensure fair play and prevent abuse, we require all users to complete a simple verification process
-                before making predictions.
+                To ensure fair play and prevent abuse, we require all users to
+                complete a simple verification process before making
+                predictions.
               </p>
             </Card>
           </div>
@@ -1800,8 +2096,8 @@ function handleError(error: unknown) {
             <Button
               variant="outline"
               onClick={() => {
-                setShowVerificationDialog(false)
-                handleVerificationComplete(false)
+                setShowVerificationDialog(false);
+                handleVerificationComplete(false);
               }}
             >
               Cancel
@@ -1811,34 +2107,94 @@ function handleError(error: unknown) {
         </DialogContent>
       </Dialog>
 
+      {/* Transaction Status Dialog */}
+      <Dialog
+        open={!!claimTxHash}
+        onOpenChange={(open) => !open && setClaimTxHash(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5 text-primary" />
+              Transaction Submitted
+            </DialogTitle>
+            <DialogDescription>
+              Your claim transaction has been submitted to the blockchain.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="p-4 bg-primary/10 rounded-full">
+              <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            </div>
+            <div className="text-center">
+              <p className="font-medium">Transaction Hash</p>
+              <p className="text-sm text-muted-foreground break-all mt-1">
+                {claimTxHash}
+              </p>
+            </div>
+            <div className="text-sm text-muted-foreground text-center">
+              The transaction is being processed. This may take a few minutes to
+              complete.
+            </div>
+          </div>
+          <DialogFooter className="flex justify-center sm:justify-center gap-2">
+            <Button variant="outline" onClick={() => setClaimTxHash(null)}>
+              Close
+            </Button>
+            <Button
+              onClick={() => claimTxHash && viewTransaction(claimTxHash)}
+              className="gap-2"
+            >
+              <ArrowRight className="h-4 w-4" />
+              View on Etherscan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal overlay during submission */}
       {(Object.values(isPlacingBet).some(Boolean) || isPending) && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
           <Card className="w-[300px]">
             <CardHeader>
-              <CardTitle className="text-center">Processing Prediction</CardTitle>
+              <CardTitle className="text-center">
+                Processing Prediction
+              </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-center text-muted-foreground">Please wait while we process your prediction...</p>
+              <p className="text-center text-muted-foreground">
+                Please wait while we process your prediction...
+              </p>
             </CardContent>
           </Card>
         </div>
       )}
 
       {/* Match Details Dialog */}
-      <Dialog open={!!selectedMatchDetails} onOpenChange={(open) => !open && setSelectedMatchDetails(null)}>
+      <Dialog
+        open={!!selectedMatchDetails}
+        onOpenChange={(open) => !open && setSelectedMatchDetails(null)}
+      >
         <DialogContent className="max-w-4xl overflow-hidden">
           <DialogHeader className="bg-primary/5 p-4 rounded-t-lg">
             <DialogTitle className="text-2xl flex items-center justify-center gap-4">
               <img
-                src={selectedMatchDetails?.teamA ? getTeamLogo(selectedMatchDetails.teamA) : "/placeholder.svg"}
+                src={
+                  selectedMatchDetails?.teamA
+                    ? getTeamLogo(selectedMatchDetails.teamA)
+                    : "/placeholder.svg"
+                }
                 alt={selectedMatchDetails?.teamA || "Team A"}
                 className="h-8 w-8 rounded-full bg-primary/10"
               />
               <span>{selectedMatchDetails?.match}</span>
               <img
-                src={selectedMatchDetails?.teamB ? getTeamLogo(selectedMatchDetails.teamB) : "/placeholder.svg"}
+                src={
+                  selectedMatchDetails?.teamB
+                    ? getTeamLogo(selectedMatchDetails.teamB)
+                    : "/placeholder.svg"
+                }
                 alt={selectedMatchDetails?.teamB || "Team B"}
                 className="h-8 w-8 rounded-full bg-primary/10"
               />
@@ -1860,7 +2216,9 @@ function handleError(error: unknown) {
                         <h3 className="text-lg font-medium">Match Summary</h3>
                         <p className="text-sm text-muted-foreground">
                           {selectedMatchDetails.predictions.length} prediction
-                          {selectedMatchDetails.predictions.length !== 1 ? "s" : ""}
+                          {selectedMatchDetails.predictions.length !== 1
+                            ? "s"
+                            : ""}
                         </p>
                       </div>
                     </div>
@@ -1869,15 +2227,23 @@ function handleError(error: unknown) {
                       <div className="text-center">
                         <div className="flex items-center gap-1">
                           <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-800 dark:text-green-300 font-bold">
-                            {selectedMatchDetails.predictions.filter((p) => p.status === "won").length}
+                            {
+                              selectedMatchDetails.predictions.filter(
+                                (p) => p.status === "won"
+                              ).length
+                            }
                           </div>
                           <div className="text-sm">
                             <div className="font-medium">Won</div>
                             <div className="text-xs text-muted-foreground">
                               {Math.round(
-                                (selectedMatchDetails.predictions.filter((p) => p.status === "won").length /
-                                  selectedMatchDetails.predictions.filter((p) => p.status !== "pending").length) *
-                                  100,
+                                (selectedMatchDetails.predictions.filter(
+                                  (p) => p.status === "won"
+                                ).length /
+                                  selectedMatchDetails.predictions.filter(
+                                    (p) => p.status !== "pending"
+                                  ).length) *
+                                  100
                               ) || 0}
                               %
                             </div>
@@ -1887,15 +2253,23 @@ function handleError(error: unknown) {
                       <div className="text-center">
                         <div className="flex items-center gap-1">
                           <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-800 dark:text-red-300 font-bold">
-                            {selectedMatchDetails.predictions.filter((p) => p.status === "lost").length}
+                            {
+                              selectedMatchDetails.predictions.filter(
+                                (p) => p.status === "lost"
+                              ).length
+                            }
                           </div>
                           <div className="text-sm">
                             <div className="font-medium">Lost</div>
                             <div className="text-xs text-muted-foreground">
                               {Math.round(
-                                (selectedMatchDetails.predictions.filter((p) => p.status === "lost").length /
-                                  selectedMatchDetails.predictions.filter((p) => p.status !== "pending").length) *
-                                  100,
+                                (selectedMatchDetails.predictions.filter(
+                                  (p) => p.status === "lost"
+                                ).length /
+                                  selectedMatchDetails.predictions.filter(
+                                    (p) => p.status !== "pending"
+                                  ).length) *
+                                  100
                               ) || 0}
                               %
                             </div>
@@ -1905,15 +2279,21 @@ function handleError(error: unknown) {
                       <div className="text-center">
                         <div className="flex items-center gap-1">
                           <div className="h-8 w-8 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center text-yellow-800 dark:text-yellow-300 font-bold">
-                            {selectedMatchDetails.predictions.filter((p) => p.status === "pending").length}
+                            {
+                              selectedMatchDetails.predictions.filter(
+                                (p) => p.status === "pending"
+                              ).length
+                            }
                           </div>
                           <div className="text-sm">
                             <div className="font-medium">Pending</div>
                             <div className="text-xs text-muted-foreground">
                               {Math.round(
-                                (selectedMatchDetails.predictions.filter((p) => p.status === "pending").length /
+                                (selectedMatchDetails.predictions.filter(
+                                  (p) => p.status === "pending"
+                                ).length /
                                   selectedMatchDetails.predictions.length) *
-                                  100,
+                                  100
                               )}
                               %
                             </div>
@@ -1931,16 +2311,20 @@ function handleError(error: unknown) {
                           prediction.status === "won"
                             ? "border-l-green-500"
                             : prediction.status === "lost"
-                              ? "border-l-red-500"
-                              : "border-l-yellow-500"
+                            ? "border-l-red-500"
+                            : "border-l-yellow-500"
                         }`}
                       >
                         <CardHeader className="p-4 pb-2">
                           <div className="flex justify-between items-center">
-                            <CardTitle className="text-base">{prediction.question}</CardTitle>
+                            <CardTitle className="text-base">
+                              {prediction.question}
+                            </CardTitle>
                             <Badge
                               variant="outline"
-                              className={`${getStatusColor(prediction.status)} text-white flex items-center gap-1`}
+                              className={`${getStatusColor(
+                                prediction.status
+                              )} text-white flex items-center gap-1`}
                             >
                               {getStatusIcon(prediction.status)}
                               {getStatusText(prediction.status)}
@@ -1954,29 +2338,37 @@ function handleError(error: unknown) {
                         <CardContent className="p-4 pt-2">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="font-medium">Your prediction:</div>
-                            <Badge variant="secondary">{prediction.selectedOption}</Badge>
+                            <Badge variant="secondary">
+                              {prediction.selectedOption}
+                            </Badge>
                           </div>
 
                           {prediction.status === "won" && (
                             <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                               <Check className="h-4 w-4" />
-                              <span className="font-medium">Correct prediction!</span>
-                            </div>
-                          )}
-
-                          {prediction.status === "lost" && prediction.correctOption && (
-                            <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                              <X className="h-4 w-4" />
                               <span className="font-medium">
-                                Incorrect prediction. Correct answer: {prediction.correctOption}
+                                Correct prediction!
                               </span>
                             </div>
                           )}
 
+                          {prediction.status === "lost" &&
+                            prediction.correctOption && (
+                              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                                <X className="h-4 w-4" />
+                                <span className="font-medium">
+                                  Incorrect prediction. Correct answer:{" "}
+                                  {prediction.correctOption}
+                                </span>
+                              </div>
+                            )}
+
                           {prediction.status === "pending" && (
                             <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
                               <Clock className="h-4 w-4" />
-                              <span className="font-medium">Waiting for match results</span>
+                              <span className="font-medium">
+                                Waiting for match results
+                              </span>
                             </div>
                           )}
                         </CardContent>
@@ -1984,7 +2376,9 @@ function handleError(error: unknown) {
                           <CardFooter className="bg-muted/20 p-3 flex justify-between">
                             <div className="flex items-center gap-1">
                               <Coins className="h-4 w-4 text-primary" />
-                              <span className="font-medium">{prediction.reward} CPT reward</span>
+                              <span className="font-medium">
+                                {prediction.reward} CPT reward
+                              </span>
                             </div>
 
                             {prediction.claimed ? (
@@ -2000,9 +2394,18 @@ function handleError(error: unknown) {
                                 size="sm"
                                 variant="outline"
                                 className="h-8 bg-primary/10 hover:bg-primary/20"
-                                disabled={prediction.isClaimLoading}
+                                disabled={
+                                  prediction.isClaimLoading || isClaimingRewards
+                                }
+                                onClick={() =>
+                                  handleClaimAllRewards(
+                                    selectedMatchDetails.matchId,
+                                    [prediction]
+                                  )
+                                }
                               >
-                                {prediction.isClaimLoading ? (
+                                {prediction.isClaimLoading ||
+                                isClaimingRewards ? (
                                   <>
                                     <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                                     Claiming...
@@ -2028,20 +2431,35 @@ function handleError(error: unknown) {
                           <Coins className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <h3 className="font-medium">Total Rewards Available</h3>
+                          <h3 className="font-medium">
+                            Total Rewards Available
+                          </h3>
                           <p className="text-sm text-muted-foreground">
-                            You have {getClaimableTokens(selectedMatchDetails.predictions)} CPT tokens to claim
+                            You have{" "}
+                            {getClaimableTokens(
+                              selectedMatchDetails.predictions
+                            )}{" "}
+                            CPT tokens to claim
                           </p>
                         </div>
                       </div>
                       <Button
                         onClick={() =>
-                          handleClaimAllRewards(selectedMatchDetails.matchId, selectedMatchDetails.predictions)
+                          handleClaimAllRewards(
+                            selectedMatchDetails.matchId,
+                            selectedMatchDetails.predictions
+                          )
                         }
-                        disabled={selectedMatchDetails.predictions.some((p) => p.isClaimLoading)}
+                        disabled={
+                          selectedMatchDetails.predictions.some(
+                            (p) => p.isClaimLoading
+                          ) || isClaimingRewards
+                        }
                         className="bg-primary/90 hover:bg-primary w-full sm:w-auto"
                       >
-                        {selectedMatchDetails.predictions.some((p) => p.isClaimLoading) ? (
+                        {selectedMatchDetails.predictions.some(
+                          (p) => p.isClaimLoading
+                        ) || isClaimingRewards ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             Claiming All...
@@ -2057,7 +2475,11 @@ function handleError(error: unknown) {
                   )}
 
                   <div className="mt-6 flex justify-center">
-                    <Button variant="outline" className="gap-2" onClick={() => setSelectedMatchDetails(null)}>
+                    <Button
+                      variant="outline"
+                      className="gap-2"
+                      onClick={() => setSelectedMatchDetails(null)}
+                    >
                       <BookmarkCheck className="h-4 w-4" />
                       Close Details
                     </Button>
@@ -2071,6 +2493,5 @@ function handleError(error: unknown) {
 
       <Toaster position="top-right" richColors />
     </div>
-  )
+  );
 }
-
