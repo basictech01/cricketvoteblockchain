@@ -79,7 +79,6 @@ import DashboardSignupIntegration from "@/components/dashboard-signup-integratio
 import { cn } from "@/lib/utils";
 
 import { ethers } from "ethers";
-import TOKEN_ABI from "@/abis/BettingReward.json";
 
 interface Match {
   _id: string;
@@ -481,158 +480,49 @@ export default function DashBoard() {
     matchId: string,
     predictions: Prediction[]
   ) {
-    try {
-      if (!window.ethereum) {
-        toast.error("MetaMask not detected! Please install MetaMask.");
-        return;
-      }
+    // Show "coming soon" dialog instead of attempting to claim
+    const claimableTokens = getClaimableTokens(predictions);
 
-      // Get all winning predictions for this match
-      const matchPredictions = predictions.filter(
-        (p) =>
-          p.matchId === matchId && p.status === "won" && p.reward && !p.claimed
-      );
-
-      if (matchPredictions.length === 0) {
-        toast.info("No rewards to claim for this match");
-        return;
-      }
-
-      // Set global claiming state
-      setIsClaimingRewards(true);
-      setClaimTxHash(null);
-
-      // Set loading state for all predictions in this match
-      setPredictions((prev) =>
-        prev.map((p) =>
-          p.matchId === matchId && p.status === "won" && !p.claimed
-            ? { ...p, isClaimLoading: true }
-            : p
-        )
-      );
-
-      // Get user address from MetaMask
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const userAddress = await signer.getAddress();
-
-      console.log("User address from MetaMask:", userAddress);
-
-      // Fetch Merkle Root and rewards data from the backend
-      console.log("Fetching data from backend for match:", matchId);
-      const matchRes = await fetch(`/api/match`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ id: matchId, address: userAddress }),
-      });
-
-      if (!matchRes.ok) {
-        throw new Error(`Failed to fetch match data: ${matchRes.status}`);
-      }
-
-      const data = await matchRes.json();
-      console.log("Backend response:", data);
-
-      if (data.error) {
-        throw new Error(`Backend error: ${data.error}`);
-      }
-
-      const { merkleRoot, rewards, proof, matchIdForContract } = data;
-
-      if (!merkleRoot || !rewards || rewards.length === 0) {
-        throw new Error("Merkle root not found for this match.");
-      }
-
-      const userReward = rewards.find(
-        (r: RewardData) => r.user.toLowerCase() === userAddress.toLowerCase()
-      );
-
-      if (!userReward) {
-        throw new Error("No reward found for your address");
-      }
-
-      console.log("User reward found:", userReward);
-      console.log("Proof from backend:", proof);
-
-      // CRITICAL FIX: Ensure proof is an array
-      const proofArray = Array.isArray(proof) ? proof : [];
-      console.log("Proof array to use:", proofArray);
-
-      // Use the matchIdForContract from the backend if available, otherwise convert it here
-      const contractMatchId =
-        matchIdForContract || convertObjectIdToUint256(matchId);
-
-      console.log("Contract parameters:", {
-        matchId: contractMatchId,
-        reward: userReward.reward,
-        proofLength: proofArray.length,
-      });
-
-      // Connect to the contract
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, TOKEN_ABI, signer);
-
-      // IMPROVED: Skip gas estimation and go directly to transaction with high gas limit
-      // This avoids the gas estimation errors that were occurring
-      console.log("Sending transaction with high gas limit...");
-
-      // Show a toast notification that transaction is being sent
-      toast.loading("Sending transaction to claim rewards...", {
-        id: "claim-tx",
-      });
-
-      const tx = await contract.claimTokens(
-        contractMatchId,
-        userReward.reward,
-        proofArray,
-        {
-          gasLimit: 500000, // High fixed gas limit to avoid estimation issues
-        }
-      );
-
-      console.log("Transaction sent:", tx.hash);
-      setClaimTxHash(tx.hash);
-
-      // Update toast to show transaction is pending
-      toast.loading(
-        `Transaction pending: ${tx.hash.slice(0, 6)}...${tx.hash.slice(-4)}`,
-        {
-          id: "claim-tx",
-        }
-      );
-
-      // Wait for transaction confirmation
-      const receipt = await tx.wait();
-      console.log("Transaction confirmed in block:", receipt.blockNumber);
-
-      // Update state after successful claim
-      setPredictions((prev) =>
-        prev.map((p) =>
-          p.matchId === matchId && p.status === "won" && !p.claimed
-            ? { ...p, claimed: true, isClaimLoading: false }
-            : p
-        )
-      );
-
-      // Update toast to show success
-      toast.success(`Successfully claimed ${userReward.reward} CPT tokens!`, {
-        id: "claim-tx",
-      });
-
-      // Refresh user bets to update the UI
-      handleRefresh();
-    } catch (error) {
-      console.error("Error claiming rewards:", error);
-      handleClaimError(error);
-    } finally {
-      setIsClaimingRewards(false);
-      setPredictions((prev) =>
-        prev.map((p) =>
-          p.matchId === matchId ? { ...p, isClaimLoading: false } : p
-        )
-      );
-    }
+    // Create a dialog to show the "coming soon" message
+    toast.custom(
+      (t) => (
+        <div className="max-w-md w-full bg-card border border-primary/20 shadow-lg rounded-lg pointer-events-auto flex flex-col">
+          <div className="p-4 bg-primary/5 rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-lg flex items-center gap-2">
+                <Coins className="h-5 w-5 text-primary" />
+                Feature Coming Soon
+              </h3>
+              <button onClick={() => toast.dismiss(t.id)}>
+                <X className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+              </button>
+            </div>
+          </div>
+          <div className="p-4 flex flex-col items-center">
+            <div className="bg-primary/10 p-3 rounded-full mb-3">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-center mb-2">
+              Token claiming will be available soon!
+            </p>
+            <p className="text-sm text-muted-foreground text-center">
+              We're working on implementing this feature. You have{" "}
+              {claimableTokens} CPT tokens waiting to be claimed.
+            </p>
+          </div>
+          <div className="p-3 bg-primary/5 rounded-b-lg flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      ),
+      { duration: 5000 }
+    );
   }
 
   // IMPROVED: Better error handling for claim function
@@ -806,9 +696,46 @@ export default function DashBoard() {
   const viewTransaction = (txHash: string) => {
     if (!txHash) return;
 
-    // Sepolia explorer URL
-    const explorerUrl = `https://sepolia.etherscan.io/tx/${txHash}`;
-    window.open(explorerUrl, "_blank");
+    // Show "coming soon" dialog instead of redirecting to Etherscan
+    toast.custom(
+      (t) => (
+        <div className="max-w-md w-full bg-card border border-primary/20 shadow-lg rounded-lg pointer-events-auto flex flex-col">
+          <div className="p-4 bg-primary/5 rounded-t-lg">
+            <div className="flex items-center justify-between">
+              <h3 className="font-medium text-lg flex items-center gap-2">
+                <Coins className="h-5 w-5 text-primary" />
+                Feature Coming Soon
+              </h3>
+              <button onClick={() => toast.dismiss(t.id)}>
+                <X className="h-5 w-5 text-muted-foreground hover:text-foreground" />
+              </button>
+            </div>
+          </div>
+          <div className="p-4 flex flex-col items-center">
+            <div className="bg-primary/10 p-3 rounded-full mb-3">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-center mb-2">
+              Transaction viewing will be available soon!
+            </p>
+            <p className="text-sm text-muted-foreground text-center">
+              We're working on implementing this feature. Thank you for your
+              patience.
+            </p>
+          </div>
+          <div className="p-3 bg-primary/5 rounded-b-lg flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => toast.dismiss(t.id)}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      ),
+      { duration: 5000 }
+    );
   };
 
   return (
