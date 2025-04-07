@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import mongoose from "mongoose";
 import { useState, useEffect, useMemo } from "react";
@@ -493,7 +494,11 @@ export default function DashBoard() {
                 <Coins className="h-5 w-5 text-primary" />
                 Feature Coming Soon
               </h3>
-              <button onClick={() => toast.dismiss(t.id)}>
+              <button
+                onClick={() =>
+                  toast.dismiss((t as unknown as { id: string }).id)
+                }
+              >
                 <X className="h-5 w-5 text-muted-foreground hover:text-foreground" />
               </button>
             </div>
@@ -506,7 +511,7 @@ export default function DashBoard() {
               Token claiming will be available soon!
             </p>
             <p className="text-sm text-muted-foreground text-center">
-              We're working on implementing this feature. You have{" "}
+              We&apos;re working on implementing this feature. You have{" "}
               {claimableTokens} CPT tokens waiting to be claimed.
             </p>
           </div>
@@ -514,7 +519,7 @@ export default function DashBoard() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => toast.dismiss(t.id)}
+              onClick={() => toast.dismiss((t as unknown as { id: string }).id)}
             >
               Close
             </Button>
@@ -706,7 +711,11 @@ export default function DashBoard() {
                 <Coins className="h-5 w-5 text-primary" />
                 Feature Coming Soon
               </h3>
-              <button onClick={() => toast.dismiss(t.id)}>
+              <button
+                onClick={() =>
+                  toast.dismiss((t as unknown as { id: string }).id)
+                }
+              >
                 <X className="h-5 w-5 text-muted-foreground hover:text-foreground" />
               </button>
             </div>
@@ -719,15 +728,15 @@ export default function DashBoard() {
               Transaction viewing will be available soon!
             </p>
             <p className="text-sm text-muted-foreground text-center">
-              We're working on implementing this feature. Thank you for your
-              patience.
+              We&apos;re working on implementing this feature. Thank you for
+              your patience.
             </p>
           </div>
           <div className="p-3 bg-primary/5 rounded-b-lg flex justify-end">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => toast.dismiss(t.id)}
+              onClick={() => toast.dismiss((t as unknown as { id: string }).id)}
             >
               Close
             </Button>
@@ -767,8 +776,8 @@ export default function DashBoard() {
                       }
                       className="mt-1"
                     >
-                      {chains.find((c) => c.id === chain?.id)?.name ||
-                        "Unknown Network"}
+                      {chains.find((c: { id: any }) => c.id === chain?.id)
+                        ?.name || "Unknown Network"}
                     </Badge>
                   </div>
                 </div>
@@ -862,8 +871,8 @@ export default function DashBoard() {
                     }
                     className="mt-1"
                   >
-                    {chains.find((c) => c.id === chain?.id)?.name ||
-                      "Unknown Network"}
+                    {chains.find((c: { id: any }) => c.id === chain?.id)
+                      ?.name || "Unknown Network"}
                   </Badge>
                 </div>
               </div>
@@ -968,8 +977,8 @@ export default function DashBoard() {
                           }
                           className="mt-2"
                         >
-                          {chains.find((c) => c.id === chain?.id)?.name ||
-                            "Unknown Network"}
+                          {chains.find((c: { id: any }) => c.id === chain?.id)
+                            ?.name || "Unknown Network"}
                         </Badge>
                       )}
                     </CardContent>
@@ -1969,7 +1978,7 @@ export default function DashBoard() {
                 className="text-muted-foreground flex-1 justify-center py-2"
               >
                 Current:{" "}
-                {chains.find((c) => c.id === chain?.id)?.name ||
+                {chains.find((c: { id: any }) => c.id === chain?.id)?.name ||
                   "Unknown Network"}
               </Badge>
               <ArrowRight className="h-6 w-6 text-muted-foreground animate-pulse" />
