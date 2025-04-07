@@ -26,25 +26,20 @@ import {
   AlertTriangle,
   Wallet,
   BarChart3,
-  BirdIcon as Cricket,
   ChevronLeft,
   ChevronRight,
   Trophy,
   Calendar,
   Clock,
   Sparkles,
-  Users,
-  Zap,
-  Bell,
   Menu,
-  Flame,
-  Star,
   Loader2,
   Check,
   X,
   RefreshCw,
   Bookmark,
   BookmarkCheck,
+  TrophyIcon as CricketBall,
 } from "lucide-react";
 import abi from "../abis/Vote.json";
 import {
@@ -661,12 +656,9 @@ export default function DashBoard() {
     }
   };
 
-  // Sidebar navigation items
+  // Simplified navigation items - removed non-functional sections
   const navItems = [
     { icon: <Trophy className="h-5 w-5" />, label: "Matches", active: true },
-    { icon: <Users className="h-5 w-5" />, label: "Leaderboard" },
-    { icon: <Zap className="h-5 w-5" />, label: "Rewards" },
-    { icon: <Bell className="h-5 w-5" />, label: "Notifications" },
   ];
 
   const getClaimableTokens = (predictions: Prediction[]) => {
@@ -782,7 +774,7 @@ export default function DashBoard() {
         <SheetContent side="left" className="w-[300px] sm:w-[400px] p-0">
           <SheetHeader className="p-6 border-b">
             <SheetTitle className="flex items-center gap-2">
-              <Cricket className="h-6 w-6 text-primary" />
+              <CricketBall className="h-6 w-6 text-primary" />
               <span>Cricket Prophet</span>
             </SheetTitle>
             <SheetDescription>
@@ -874,7 +866,7 @@ export default function DashBoard() {
                   duration: 1.5,
                 }}
               >
-                <Cricket className="h-6 w-6 text-primary" />
+                <CricketBall className="h-6 w-6 text-primary" />
               </motion.div>
               <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                 Cricket Prophet
@@ -1115,7 +1107,7 @@ export default function DashBoard() {
                           </div>
                         ) : matches.length === 0 ? (
                           <div className="p-6 flex flex-col items-center justify-center">
-                            <Cricket className="h-12 w-12 text-muted-foreground mb-4" />
+                            <CricketBall className="h-12 w-12 text-muted-foreground mb-4" />
                             <p className="text-muted-foreground text-center">
                               No upcoming matches found
                             </p>
@@ -1552,9 +1544,9 @@ export default function DashBoard() {
                   </TabsContent>
                 </Tabs>
 
-                {/* Trending Matches - Desktop Only */}
+                {/* Matches Grid - Desktop Only */}
                 <div className="hidden lg:block mt-6">
-                  <h2 className="text-xl font-bold mb-4">Trending Matches</h2>
+                  <h2 className="text-xl font-bold mb-4">All Matches</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {!isLoading && matches.length > 0
                       ? matches.map((match, idx) => (
@@ -1615,12 +1607,6 @@ export default function DashBoard() {
                                     </TooltipContent>
                                   </Tooltip>
                                 </TooltipProvider>
-                                <div className="text-sm">
-                                  <span className="text-primary font-medium">
-                                    {Math.floor(Math.random() * 300) + 50}+
-                                  </span>{" "}
-                                  users predicting
-                                </div>
                               </div>
                             </CardContent>
                             <CardFooter className="bg-muted/20 p-3">
@@ -1636,66 +1622,13 @@ export default function DashBoard() {
                         ))
                       : !isLoading && (
                           <div className="col-span-3 flex flex-col items-center justify-center p-8">
-                            <Cricket className="h-16 w-16 text-muted-foreground mb-4" />
+                            <CricketBall className="h-16 w-16 text-muted-foreground mb-4" />
                             <p className="text-muted-foreground text-center">
-                              No trending matches available at the moment.
+                              No matches available at the moment.
                             </p>
                           </div>
                         )}
                   </div>
-                </div>
-
-                {/* Leaderboard - Desktop Only */}
-                <div className="hidden lg:block mt-8">
-                  <h2 className="text-xl font-bold mb-4">Top Predictors</h2>
-                  <Card>
-                    <CardHeader className="bg-primary/5">
-                      <CardTitle>Weekly Leaderboard</CardTitle>
-                      <CardDescription>
-                        Top performers based on prediction accuracy
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="divide-y">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between p-4"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 font-bold">
-                                {i}
-                              </div>
-                              <Avatar className="h-10 w-10 border-2 border-primary/20">
-                                <AvatarFallback>
-                                  {String.fromCharCode(64 + i)}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-medium">User{i}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {90 - i * 5}% accuracy
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                variant="outline"
-                                className="bg-primary/10"
-                              >
-                                <Flame className="h-3 w-3 mr-1 text-primary" />
-                                {10 - i} streak
-                              </Badge>
-                              <Badge>
-                                <Star className="h-3 w-3 mr-1" />
-                                {1000 - i * 100} CPT
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
                 </div>
               </>
             ) : (
@@ -1717,7 +1650,7 @@ export default function DashBoard() {
                       }}
                       className="mx-auto mb-4"
                     >
-                      <Cricket className="h-12 w-12 text-primary" />
+                      <CricketBall className="h-12 w-12 text-primary" />
                     </motion.div>
                     <CardTitle className="text-2xl">
                       Welcome to Cricket Prophet
@@ -2141,25 +2074,6 @@ export default function DashBoard() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal overlay during submission */}
-      {(Object.values(isPlacingBet).some(Boolean) || isPending) && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
-          <Card className="w-[300px]">
-            <CardHeader>
-              <CardTitle className="text-center">
-                Processing Prediction
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center">
-              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-              <p className="text-center text-muted-foreground">
-                Please wait while we process your prediction...
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
       {/* Match Details Dialog */}
       <Dialog
         open={!!selectedMatchDetails}
@@ -2479,6 +2393,25 @@ export default function DashBoard() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      {/* Modal overlay during submission */}
+      {(Object.values(isPlacingBet).some(Boolean) || isPending) && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <Card className="w-[300px]">
+            <CardHeader>
+              <CardTitle className="text-center">
+                Processing Prediction
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <p className="text-center text-muted-foreground">
+                Please wait while we process your prediction...
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Toaster position="top-right" richColors />
     </div>

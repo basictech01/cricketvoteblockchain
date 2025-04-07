@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import {
   WagmiProvider,
   createConfig,
@@ -12,7 +11,6 @@ import { coinbaseWallet, walletConnect } from "wagmi/connectors";
 import { sepolia, mainnet, polygon } from "wagmi/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Web3AuthConnectorInstance from "./Web3AuthConnectorInstance";
-import { Loader2 } from "lucide-react";
 import AdminDashboard from "@/components/admin";
 import DashBoard from "@/components/dashboard";
 import { Toaster } from "sonner";
@@ -54,30 +52,14 @@ export default function Home() {
 }
 
 function MainApp() {
-  const { address, isConnected } = useAccount();
-  const [isLoading, setIsLoading] = useState(true);
+  const { address } = useAccount();
 
-  const { data: isAdmin, isLoading: isContractLoading } = useReadContract({
+  const { data: isAdmin } = useReadContract({
     address: CONTRACT_ADDRESS as `0x${string}`,
     abi,
     functionName: "checkAdmin",
     args: [address],
   });
-
-  useEffect(() => {
-    if (!isContractLoading || !isConnected) {
-      setIsLoading(false);
-    }
-  }, [isContractLoading, isConnected]);
-
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground">Loading application...</p>
-      </div>
-    );
-  }
 
   return isAdmin ? <AdminDashboard /> : <DashBoard />;
 }
