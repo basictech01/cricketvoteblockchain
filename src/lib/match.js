@@ -54,7 +54,7 @@ const iplMatches = [
     teamB: "Gujarat Titans",
     venue:
       "Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium, Lucknow",
-    date: createMatchDate(12, 4, 2024, 15, 30), // April 12, 2024, 3:30 PM IST
+    date: createMatchDate(12, 4, 2025, 15, 30), // April 12, 2024, 3:30 PM IST
     day: "Saturday",
   },
   {
@@ -62,7 +62,7 @@ const iplMatches = [
     teamA: "Sunrisers Hyderabad",
     teamB: "Punjab Kings",
     venue: "Rajiv Gandhi International Stadium, Hyderabad",
-    date: createMatchDate(12, 4, 2024, 19, 30), // April 12, 2024, 7:30 PM IST
+    date: createMatchDate(12, 4, 2025, 19, 30), // April 12, 2024, 7:30 PM IST
     day: "Saturday",
   },
   {
@@ -70,7 +70,7 @@ const iplMatches = [
     teamA: "Rajasthan Royals",
     teamB: "Royal Challengers Bengaluru",
     venue: "Sawai Mansingh Stadium, Jaipur",
-    date: createMatchDate(13, 4, 2024, 15, 30), // April 13, 2024, 3:30 PM IST
+    date: createMatchDate(13, 4, 2025, 15, 30), // April 13, 2024, 3:30 PM IST
     day: "Sunday",
   },
   {
@@ -78,7 +78,7 @@ const iplMatches = [
     teamA: "Delhi Capitals",
     teamB: "Mumbai Indians",
     venue: "Arun Jaitley Stadium, Delhi",
-    date: createMatchDate(13, 4, 2024, 19, 30), // April 13, 2024, 7:30 PM IST
+    date: createMatchDate(13, 4, 2025, 19, 30), // April 13, 2024, 7:30 PM IST
     day: "Sunday",
   },
 ];
