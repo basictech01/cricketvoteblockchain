@@ -97,7 +97,7 @@ Admins manage matches, questions, results, and generate Merkle roots.
 
 ```bash
 # Clone the repo
-git clone https://github.com/yourusername/CricketVoteCrypto.git
+git clone https://github.com/basictech01/cricketvoteblockchain.git
 cd CricketVoteCrypto
 
 # Install dependencies
