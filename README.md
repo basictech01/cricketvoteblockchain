@@ -59,6 +59,23 @@ Real-time match questions appear here — users can vote with CVT tokens.
 
 ---
 
+### 🔍 View Your Predictions
+
+After voting on match questions, users can visit the **"Your Predictions"** section to:
+
+- ✅ **See all matches they’ve voted on**
+- 📊 **Track the number of predictions won, lost, or pending**
+- 🧠 **Analyze performance and accuracy**
+- 🪙 **Claim CVT rewards for correct predictions**
+
+This section enhances engagement by helping users reflect on their prediction trends and success rate.
+
+> 🔁 The predictions section updates in real-time as match results are submitted.
+
+![Your Predictions](./public/viewPrediction.png) 
+
+---
+
 ### 🧑‍💼 Admin Panel  
 
 Admins manage matches, questions, results, and generate Merkle roots.
