@@ -1,96 +1,87 @@
 # 🏏 CricketVoteCrypto
 
-**CricketVoteCrypto** is a Web3-powered IPL prediction platform where users participate in match-based prediction questions and earn **CVT (Cricket Vote Token)** as rewards. It merges the thrill of fantasy cricket with the transparency and security of blockchain to create a gamified, community-driven experience.
+**CricketVoteCrypto** is a Web3-powered IPL prediction platform where users participate in match-based prediction questions and earn **CVT (Cricket Vote Token)** as rewards. The platform merges fantasy cricket and decentralized Web3 technology, ensuring transparent, fair, and community-driven match predictions.
+
+Users connect their MetaMask wallets, vote on real-time IPL match questions using CVT tokens, and claim rewards based on prediction accuracy — all handled by smart contracts and Merkle tree proofs to ensure trust and scalability.
 
 ---
 
-## 🚀 Live Demo
+## 🔥 Highlights
 
-Coming soon...
-
----
-
-## 📜 Table of Contents
-
-- [About](#about)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [Scripts](#scripts)
-- [Screenshots](#screenshots)
-- [License](#license)
+- ✅ **Web3 Authentication via MetaMask**
+- 🎯 **Vote on real-time IPL match questions**
+- 🏆 **Merkle-based fair reward system**
+- 📈 **Gamified stats and leaderboard**
+- 🧑‍💼 **Robust Admin Panel**
+- 💸 **Earn & claim CVT tokens through smart contracts**
 
 ---
 
-## 📖 About
+## ⚙️ How It Works
 
-This DApp enables users to:
+1. **User signs up** using MetaMask and receives **10 CVT tokens**.
+2. **Admin creates prediction questions** for IPL matches (e.g., *"Will there be a six in this over?"*).
+3. Users vote on predictions before the deadline using their tokens.
+4. After the match, the **admin marks correct answers**.
+5. A **Merkle tree** is generated of all correct users and the **Merkle Root is pushed on-chain**.
+6. Users claim rewards by submitting **Merkle Proofs** to the contract.
 
-- Connect with MetaMask wallet
-- Earn CVT tokens
-- Participate in IPL match prediction questions
-- Claim rewards securely using Merkle tree proofs
-
-All data is decentralized and trustless thanks to Ethereum smart contracts deployed on the **Sepolia Testnet**.
-
----
-
-## ✨ Features
-
-### ✅ Web3 Wallet Integration
-
-Users connect via MetaMask and get an initial airdrop of **10 CVT tokens** to participate in predictions.
-
-### 🎯 Prediction Questions
-
-Admins create time-bound prediction questions for each IPL match. Users vote using CVT tokens before the deadline.
-
-### 🧾 Merkle-Based Reward Distribution
-
-Winning users are compiled into a Merkle tree. Only the root is stored on-chain, and users claim rewards by submitting Merkle proofs — saving gas and maintaining security.
-
-### 📊 User Dashboard
-
-Users can track:
-
-- Total predictions
-- Pending/won/lost predictions
-- Overall & per-match accuracy
-
-### 🔐 Admin Panel
-
-Admins can:
-
-- Create/edit questions
-- Mark answers post-match
-- Generate Merkle tree and push root to the contract
+> 🔐 Only the Merkle Root is stored on-chain, making it efficient and secure.
 
 ---
 
 ## 🛠 Tech Stack
 
-| Layer         | Tech                          |
-|---------------|-------------------------------|
-| Frontend      | Next.js, Tailwind CSS         |
-| Blockchain    | Solidity (ERC-20 + Merkle)    |
-| Wallet Auth   | MetaMask                      |
-| Backend DB    | MongoDB                       |
-| Network       | Sepolia Ethereum Testnet      |
+- **Frontend:** Next.js, Tailwind CSS
+- **Smart Contracts:** Solidity (ERC-20 + Merkle reward logic)
+- **Blockchain:** Sepolia Ethereum Testnet
+- **Wallet Auth:** MetaMask
+- **Database:** MongoDB
+- **Tools:** Ethers.js, Hardhat (optional), Merkle Tree JS
 
 ---
 
-## 📦 Getting Started
+## 🖼 Screenshots
 
-### 🧑‍💻 Prerequisites
+### 🏠 Home Page & Dashboard  
+
+Users view upcoming matches, vote on predictions, and see their CVT balance.
+
+![Home Page](./public/home.png)
+
+---
+
+### 📊 Prediction Interface  
+
+Real-time match questions appear here — users can vote with CVT tokens.
+
+![Predictions](./public/predictions.png)
+
+---
+
+### 🧑‍💼 Admin Panel  
+
+Admins manage matches, questions, results, and generate Merkle roots.
+
+![Admin Panel](./public/admin.png)
+
+---
+
+## 📦 Installation & Usage
+
+### 🔧 Prerequisites
 
 - Node.js v18+
 - MetaMask Extension
-- MongoDB running locally or remotely
-- Sepolia ETH for test transactions
+- MongoDB (local or cloud)
+- Sepolia ETH for wallet testing
 
-### 📥 Installation
+### 📥 Setup
 
 ```bash
+# Clone the repo
 git clone https://github.com/yourusername/CricketVoteCrypto.git
 cd CricketVoteCrypto
+
+# Install dependencies
 npm install
