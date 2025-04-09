@@ -178,6 +178,9 @@ export default function DashBoard() {
     functionName: "balanceOf",
     args: [address],
   });
+  useEffect(() => {
+    console.log("tokenBalance", tokenBalance);
+  }, [isBalanceLoading, tokenBalance]);
 
   // Write contract hook
   const { writeContractAsync, isPending, isError, error } = useWriteContract();
