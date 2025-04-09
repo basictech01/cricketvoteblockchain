@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏏 CricketVoteCrypto
 
-## Getting Started
+**CricketVoteCrypto** is a Web3-powered IPL prediction platform where users participate in match-based prediction questions and earn **CVT (Cricket Vote Token)** as rewards. It merges the thrill of fantasy cricket with the transparency and security of blockchain to create a gamified, community-driven experience.
 
-First, run the development server:
+---
+
+## 🚀 Live Demo
+
+Coming soon...
+
+---
+
+## 📜 Table of Contents
+
+- [About](#about)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Scripts](#scripts)
+- [Screenshots](#screenshots)
+- [License](#license)
+
+---
+
+## 📖 About
+
+This DApp enables users to:
+
+- Connect with MetaMask wallet
+- Earn CVT tokens
+- Participate in IPL match prediction questions
+- Claim rewards securely using Merkle tree proofs
+
+All data is decentralized and trustless thanks to Ethereum smart contracts deployed on the **Sepolia Testnet**.
+
+---
+
+## ✨ Features
+
+### ✅ Web3 Wallet Integration
+
+Users connect via MetaMask and get an initial airdrop of **10 CVT tokens** to participate in predictions.
+
+### 🎯 Prediction Questions
+
+Admins create time-bound prediction questions for each IPL match. Users vote using CVT tokens before the deadline.
+
+### 🧾 Merkle-Based Reward Distribution
+
+Winning users are compiled into a Merkle tree. Only the root is stored on-chain, and users claim rewards by submitting Merkle proofs — saving gas and maintaining security.
+
+### 📊 User Dashboard
+
+Users can track:
+
+- Total predictions
+- Pending/won/lost predictions
+- Overall & per-match accuracy
+
+### 🔐 Admin Panel
+
+Admins can:
+
+- Create/edit questions
+- Mark answers post-match
+- Generate Merkle tree and push root to the contract
+
+---
+
+## 🛠 Tech Stack
+
+| Layer         | Tech                          |
+|---------------|-------------------------------|
+| Frontend      | Next.js, Tailwind CSS         |
+| Blockchain    | Solidity (ERC-20 + Merkle)    |
+| Wallet Auth   | MetaMask                      |
+| Backend DB    | MongoDB                       |
+| Network       | Sepolia Ethereum Testnet      |
+
+---
+
+## 📦 Getting Started
+
+### 🧑‍💻 Prerequisites
+
+- Node.js v18+
+- MetaMask Extension
+- MongoDB running locally or remotely
+- Sepolia ETH for test transactions
+
+### 📥 Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+git clone https://github.com/yourusername/CricketVoteCrypto.git
+cd CricketVoteCrypto
+npm install
